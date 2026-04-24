@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <style>
-:root{--pri:#1a5632;--pri2:#2d8a4e;--bg:#f5f7f5;--card:#fff;--txt:#1a1a1a;--txt2:#555;--red:#e74c3c;--yel:#f39c12;--grn:#27ae60;--brd:#ddd}
+:root{--pri:#7B1E3B;--pri2:#9B3A5A;--bg:#f9f5f6;--card:#fff;--txt:#1a1a1a;--txt2:#555;--red:#e74c3c;--yel:#f39c12;--grn:#27ae60;--brd:#ddd;--pri-light:#f5e6ec}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
 .header{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;padding:20px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
@@ -23,13 +23,13 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 table{width:100%;border-collapse:collapse;font-size:.85em}
 th{background:var(--pri);color:#fff;padding:10px 8px;text-align:left;position:sticky;top:0}
 td{padding:8px;border-bottom:1px solid var(--brd)}
-tr:nth-child(even){background:#f9f9f9}
-tr:hover{background:#eef5ee}
+tr:nth-child(even){background:#faf5f7}
+tr:hover{background:var(--pri-light)}
 .sem{display:inline-block;width:16px;height:16px;border-radius:50%;vertical-align:middle}
 .sem-g{background:var(--grn)}.sem-y{background:var(--yel)}.sem-r{background:var(--red)}
-.tot-row{font-weight:700;background:#e8f5e9 !important}
-.upload-area{border:3px dashed var(--pri);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s;background:#f0f8f0}
-.upload-area:hover{background:#e0f0e0;border-color:var(--pri2)}
+.tot-row{font-weight:700;background:var(--pri-light) !important}
+.upload-area{border:3px dashed var(--pri);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s;background:#fdf0f4}
+.upload-area:hover{background:var(--pri-light);border-color:var(--pri2)}
 .upload-area input{display:none}
 .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
 .modal-bg.active{display:flex}
@@ -38,10 +38,10 @@ tr:hover{background:#eef5ee}
 .modal input{width:100%;padding:12px;border:2px solid var(--brd);border-radius:8px;font-size:1em;margin-bottom:15px}
 .role-btns{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
 .role-btn{flex:1;padding:15px;border:2px solid var(--brd);border-radius:12px;cursor:pointer;text-align:center;transition:.2s}
-.role-btn:hover,.role-btn.active{border-color:var(--pri);background:#f0f8f0}
+.role-btn:hover,.role-btn.active{border-color:var(--pri);background:var(--pri-light)}
 .role-btn h3{color:var(--pri);margin-bottom:5px}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px}
-.kpi{background:linear-gradient(135deg,#f0f8f0,#e8f5e9);border-radius:12px;padding:20px;text-align:center;border-left:4px solid var(--pri)}
+.kpi{background:linear-gradient(135deg,#fdf0f4,var(--pri-light));border-radius:12px;padding:20px;text-align:center;border-left:4px solid var(--pri)}
 .kpi .val{font-size:1.8em;font-weight:700;color:var(--pri)}
 .kpi .lbl{font-size:.85em;color:var(--txt2);margin-top:5px}
 .month-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px}
@@ -52,7 +52,7 @@ tr:hover{background:#eef5ee}
 canvas{max-width:100%;height:auto}
 .tbl-wrap{overflow-x:auto}
 .status-bar{padding:10px 20px;text-align:center;font-size:.85em}
-.status-bar.online{background:#e8f5e9;color:var(--grn)}
+.status-bar.online{background:#f5e6ec;color:var(--pri)}
 .status-bar.offline{background:#fde8e8;color:var(--red)}
 .status-bar.loading-bar{background:#fff3cd;color:#856404}
 .loading-spinner{text-align:center;padding:40px;color:var(--txt2)}
@@ -154,7 +154,7 @@ canvas{max-width:100%;height:auto}
 
 <script>
 /* ======================================================
-   CONFIGURACIÓN - BASE DE DATOS FIREBASE
+   CONFIGURACIÓN
    ====================================================== */
 const DB_URL = 'https://elroble-presupuesto-default-rtdb.firebaseio.com';
 const ADMIN_PWD = 'ElRoble2026';
@@ -168,72 +168,96 @@ let selectedMonth = null;
 
 /* ======================================================
    PRESUPUESTO 2026 (PPTO-2026 CON INCREMENTO)
+   Cada entrada: código PUC → nombre, anual, mensual
    ====================================================== */
 const B = {
-  '41701001':{n:'Cuotas de Administración',a:1874298000,m:171810667},
-  '41701002':{n:'Intereses por Mora',a:0,m:0},
-  '41701003':{n:'Uso Zona Común Parqueaderos',a:0,m:0},
-  '41701005':{n:'Uso Zona Común Visitantes',a:0,m:0},
-  '41701006':{n:'Sanciones Convivencia',a:0,m:0},
-  '41701007':{n:'Sanciones de Inasistencia',a:0,m:0},
-  '41701008':{n:'CHIPS',a:1280000,m:106667},
-  '41701009':{n:'Uso Zona Común Fogata',a:0,m:0},
-  '41701010':{n:'Uso Zona Común BBQ',a:0,m:0},
-  '41701011':{n:'Uso Zona Común Motos',a:0,m:0},
-  '41701012':{n:'Uso Zona Común Maq. Dispensadora',a:0,m:0},
-  '511010':{n:'Revisoría Fiscal',a:15108000,m:1259000},
-  '511011':{n:'Asesoría Jurídica',a:6000000,m:500000},
-  '511022':{n:'SG SST',a:3500000,m:291667},
-  '511024':{n:'Contabilidad',a:24000000,m:2000000},
-  '51103001':{n:'Administrador',a:88855000,m:7404583},
-  '513060':{n:'Resp. Civil y Extracontractual',a:146872000,m:12239333},
-  '51350501':{n:'Servicio de Aseo',a:250413000,m:20867750},
-  '51350502':{n:'Servicio de Vigilancia',a:982282000,m:81856833},
-  '513525':{n:'Acueducto y Alcantarillado',a:9351000,m:779250},
-  '513530':{n:'Energía Eléctrica',a:132000000,m:11000000},
-  '513535':{n:'Teléfono e Internet',a:2136000,m:178000},
-  '513540':{n:'Correo, Portes y Telegramas',a:120000,m:10000},
-  '513555':{n:'Gas Natural',a:4625000,m:385417},
-  '514005':{n:'Notariales',a:300000,m:25000},
-  '51451501':{n:'Mto Equipo de Presión',a:30780000,m:2565000},
-  '51451502':{n:'Mto Ascensores',a:70160000,m:5846667},
-  '51451503':{n:'Lavado de Tanque',a:3600000,m:300000},
-  '51451504':{n:'Mto Planta Eléctrica',a:9700000,m:808333},
-  '51451505':{n:'Brazos Hidráulicos',a:13610000,m:1134167},
-  '51451506':{n:'Sistema de Detección',a:923000,m:76917},
-  '51451507':{n:'Certificación Ascensores',a:3162000,m:263500},
-  '51451508':{n:'Mto CCTV',a:2856000,m:238000},
-  '51451509':{n:'Mantenimiento Extintores',a:3168000,m:264000},
-  '51451510':{n:'Mto Cajas Residuales',a:16851000,m:1404250},
-  '51451512':{n:'Mto Software Contable',a:912000,m:76000},
-  '51451513':{n:'Licencias Software',a:0,m:0},
-  '51451514':{n:'Mto Cubiertas',a:5000000,m:416667},
-  '51451515':{n:'Otros Proyectos',a:0,m:0},
-  '51451517':{n:'Mto Alarmas',a:0,m:0},
-  '51451518':{n:'Fumigaciones',a:5680000,m:473333},
-  '51451519':{n:'Mantto Fogata y BBQ',a:16500000,m:1375000},
-  '51451520':{n:'Mantto Parqueadero',a:10984000,m:915333},
-  '514520':{n:'Equipo de Oficina',a:0,m:0},
-  '514525':{n:'Equipo Computación y Comunicación',a:1181000,m:98417},
-  '51500501':{n:'Bombillería',a:6272000,m:522667},
-  '515010':{n:'Jardinería',a:6200000,m:516667},
-  '515015':{n:'Reparaciones Locativas',a:7200000,m:600000},
-  '51952501':{n:'Insumos de Aseo',a:876000,m:73000},
-  '51952502':{n:'Cafetería',a:2028000,m:169000},
-  '519530':{n:'Útiles, Papelería y Fotocopias',a:2400000,m:200000},
-  '519545':{n:'Taxis y Buses',a:1296000,m:108000},
-  '51959504':{n:'Gastos Asamblea',a:26544000,m:2212000},
-  '51959506':{n:'Celebraciones',a:8868000,m:739000},
-  '51959507':{n:'Plan de Emergencias',a:14004000,m:1167000},
-  '51959508':{n:'Decoración Navideña',a:3600000,m:300000},
-  '519905':{n:'Fondo de Imprevistos',a:18756000,m:1563000},
-  '530505':{n:'Gastos Bancarios',a:0,m:0},
-  '530520':{n:'Intereses',a:0,m:0},
-  '531515':{n:'Costos Ejercicios Anteriores',a:0,m:0},
-  '531520':{n:'Impuestos Asumidos',a:0,m:0},
-  '539520':{n:'Multas, Sanciones y Litigios',a:0,m:0},
-  '539582':{n:'Ajuste al Peso',a:0,m:0}
+  '41701001':{n:'Cuotas de Administración',a:1874298000,m:171810667,t:'I'},
+  '41701002':{n:'Intereses por Mora',a:0,m:0,t:'I'},
+  '41701003':{n:'Uso Zona Común Parqueaderos',a:0,m:0,t:'I'},
+  '41701005':{n:'Uso Zona Común Visitantes',a:0,m:0,t:'I'},
+  '41701006':{n:'Sanciones Convivencia',a:0,m:0,t:'I'},
+  '41701007':{n:'Sanciones de Inasistencia',a:0,m:0,t:'I'},
+  '41701008':{n:'CHIPS',a:1280000,m:106667,t:'I'},
+  '41701009':{n:'Uso Zona Común Fogata',a:0,m:0,t:'I'},
+  '41701010':{n:'Uso Zona Común BBQ',a:0,m:0,t:'I'},
+  '41701011':{n:'Uso Zona Común Motos',a:0,m:0,t:'I'},
+  '41701012':{n:'Uso Zona Común Maq. Dispensadora',a:0,m:0,t:'I'},
+  '511010':{n:'Revisoría Fiscal',a:15108000,m:1259000,t:'G'},
+  '511011':{n:'Asesoría Jurídica',a:6000000,m:500000,t:'G'},
+  '511022':{n:'SG SST',a:3500000,m:291667,t:'G'},
+  '511024':{n:'Contabilidad',a:24000000,m:2000000,t:'G'},
+  '51103001':{n:'Administrador',a:88855000,m:7404583,t:'G'},
+  '513060':{n:'Resp. Civil y Extracontractual',a:146872000,m:12239333,t:'G'},
+  '51350501':{n:'Servicio de Aseo',a:250413000,m:20867750,t:'G'},
+  '51350502':{n:'Servicio de Vigilancia',a:982282000,m:81856833,t:'G'},
+  '513525':{n:'Acueducto y Alcantarillado',a:9351000,m:779250,t:'G'},
+  '513530':{n:'Energía Eléctrica',a:132000000,m:11000000,t:'G'},
+  '513535':{n:'Teléfono e Internet',a:2136000,m:178000,t:'G'},
+  '513540':{n:'Correo, Portes y Telegramas',a:120000,m:10000,t:'G'},
+  '513555':{n:'Gas Natural',a:4625000,m:385417,t:'G'},
+  '514005':{n:'Notariales',a:300000,m:25000,t:'G'},
+  '51451501':{n:'Mto Equipo de Presión',a:30780000,m:2565000,t:'G'},
+  '51451502':{n:'Mto Ascensores',a:70160000,m:5846667,t:'G'},
+  '51451503':{n:'Lavado de Tanque',a:3600000,m:300000,t:'G'},
+  '51451504':{n:'Mto Planta Eléctrica',a:9700000,m:808333,t:'G'},
+  '51451505':{n:'Brazos Hidráulicos',a:13610000,m:1134167,t:'G'},
+  '51451506':{n:'Sistema de Detección',a:923000,m:76917,t:'G'},
+  '51451507':{n:'Certificación Ascensores',a:3162000,m:263500,t:'G'},
+  '51451508':{n:'Mto CCTV',a:2856000,m:238000,t:'G'},
+  '51451509':{n:'Mantenimiento Extintores',a:3168000,m:264000,t:'G'},
+  '51451510':{n:'Mto Cajas Residuales',a:16851000,m:1404250,t:'G'},
+  '51451512':{n:'Mto Software Contable',a:912000,m:76000,t:'G'},
+  '51451513':{n:'Licencias Software',a:0,m:0,t:'G'},
+  '51451514':{n:'Mto Cubiertas',a:5000000,m:416667,t:'G'},
+  '51451515':{n:'Otros Proyectos',a:0,m:0,t:'G'},
+  '51451517':{n:'Mto Alarmas',a:0,m:0,t:'G'},
+  '51451518':{n:'Fumigaciones',a:5680000,m:473333,t:'G'},
+  '51451519':{n:'Mantto Fogata y BBQ',a:16500000,m:1375000,t:'G'},
+  '51451520':{n:'Mantto Parqueadero',a:10984000,m:915333,t:'G'},
+  '514520':{n:'Equipo de Oficina',a:0,m:0,t:'G'},
+  '514525':{n:'Equipo Computación y Comunicación',a:1181000,m:98417,t:'G'},
+  '51500501':{n:'Bombillería',a:6272000,m:522667,t:'G'},
+  '515010':{n:'Jardinería',a:6200000,m:516667,t:'G'},
+  '515015':{n:'Reparaciones Locativas',a:7200000,m:600000,t:'G'},
+  '51952501':{n:'Insumos de Aseo',a:876000,m:73000,t:'G'},
+  '51952502':{n:'Cafetería',a:2028000,m:169000,t:'G'},
+  '519530':{n:'Útiles, Papelería y Fotocopias',a:2400000,m:200000,t:'G'},
+  '519545':{n:'Taxis y Buses',a:1296000,m:108000,t:'G'},
+  '51959504':{n:'Gastos Asamblea',a:26544000,m:2212000,t:'G'},
+  '51959506':{n:'Celebraciones',a:8868000,m:739000,t:'G'},
+  '51959507':{n:'Plan de Emergencias',a:14004000,m:1167000,t:'G'},
+  '51959508':{n:'Decoración Navideña',a:3600000,m:300000,t:'G'},
+  '519905':{n:'Fondo de Imprevistos',a:18756000,m:1563000,t:'G'},
+  '530505':{n:'Gastos Bancarios',a:0,m:0,t:'G'},
+  '530520':{n:'Intereses',a:0,m:0,t:'G'},
+  '531515':{n:'Costos Ejercicios Anteriores',a:0,m:0,t:'G'},
+  '531520':{n:'Impuestos Asumidos',a:0,m:0,t:'G'},
+  '539520':{n:'Multas, Sanciones y Litigios',a:0,m:0,t:'G'},
+  '539582':{n:'Ajuste al Peso',a:0,m:0,t:'G'}
 };
+
+/* Conjunto de códigos válidos y sus prefijos para filtrar */
+const VALID_CODES = new Set(Object.keys(B));
+const VALID_PREFIXES = new Set();
+Object.keys(B).forEach(c => {
+  for(let i=1;i<=c.length;i++) VALID_PREFIXES.add(c.substring(0,i));
+});
+/* También aceptar códigos padre conocidos del PUC */
+['4','41','417','4170','417010','5','51','53','511','5110','511030',
+ '513','5130','5135','513505','5140','514095','51409501',
+ '5145','514515','5150','515005','5195','519525','519595',
+ '51959503','51959509','5199','5315','5395',
+ '51350504','51451521','51451522'].forEach(c => VALID_CODES.add(c));
+
+function isRelevantCode(code){
+  if(code.length < 6) return false; /* ignorar códigos cortos como apartamentos */
+  if(VALID_CODES.has(code)) return true;
+  /* Verificar si este código es sub-cuenta de algo en el presupuesto */
+  for(const bc of Object.keys(B)){
+    if(code.startsWith(bc) || bc.startsWith(code)) return true;
+  }
+  return false;
+}
 
 const TOTALS = {ingAnual:1875578000,ingMes:171917333,gasAnual:2196455000,gasMes:191929583};
 
@@ -257,103 +281,67 @@ const CAT_TOT_ANUAL = {
 };
 
 /* ======================================================
-   FIREBASE REST API (sin SDK, conexión directa)
+   FIREBASE REST API
    ====================================================== */
 async function fbGet(path){
-  try {
-    const r = await fetch(DB_URL+'/'+path+'.json');
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return await r.json();
-  } catch(e){console.error('fbGet error:',e);return null;}
+  try{const r=await fetch(DB_URL+'/'+path+'.json');if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}catch(e){console.error('fbGet:',e);return null;}
 }
-
-async function fbSet(path, data){
-  try {
-    const r = await fetch(DB_URL+'/'+path+'.json',{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(data)
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return true;
-  } catch(e){console.error('fbSet error:',e);return false;}
+async function fbSet(path,data){
+  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}catch(e){console.error('fbSet:',e);return false;}
 }
-
 async function fbDelete(path){
-  try {
-    const r = await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});
-    return r.ok;
-  } catch(e){console.error('fbDelete error:',e);return false;}
+  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});return r.ok;}catch(e){return false;}
 }
 
 async function loadAllMonths(){
-  const bar = document.getElementById('statusBar');
-  bar.className='status-bar loading-bar';
-  bar.textContent='Cargando datos...';
-  const data = await fbGet('months');
-  if(data !== null){
-    monthsData = data || {};
-    bar.className='status-bar online';
-    bar.textContent='Conectado a la base de datos en la nube';
-  } else {
-    bar.className='status-bar offline';
-    bar.textContent='Error de conexión. Verifica tu internet.';
-  }
+  const bar=document.getElementById('statusBar');
+  bar.className='status-bar loading-bar';bar.textContent='Cargando datos...';
+  const data=await fbGet('months');
+  if(data!==null){monthsData=data||{};bar.className='status-bar online';bar.textContent='Conectado — datos cargados';}
+  else{bar.className='status-bar offline';bar.textContent='Error de conexión';}
   refreshUI();
 }
 
-async function saveMonthToCloud(monthNum, accounts){
-  const bar = document.getElementById('statusBar');
-  bar.className='status-bar loading-bar';
-  bar.textContent='Guardando datos en la nube...';
-  const ok = await fbSet('months/'+monthNum, {month:monthNum, accounts:accounts, uploadedAt:Date.now()});
-  if(ok){
-    monthsData[monthNum] = {month:monthNum, accounts:accounts};
-    bar.className='status-bar online';
-    bar.textContent='Datos guardados exitosamente en la nube';
-    selectedMonth = monthNum;
-    refreshUI();
-  } else {
-    bar.className='status-bar offline';
-    bar.textContent='Error al guardar. Verifica tu conexión.';
-  }
+async function saveMonthToCloud(monthNum,accounts){
+  const bar=document.getElementById('statusBar');
+  bar.className='status-bar loading-bar';bar.textContent='Guardando en la nube...';
+  const ok=await fbSet('months/'+monthNum,{month:monthNum,accounts:accounts,uploadedAt:Date.now()});
+  if(ok){monthsData[monthNum]={month:monthNum,accounts:accounts};bar.className='status-bar online';bar.textContent='Guardado exitosamente';selectedMonth=monthNum;refreshUI();}
+  else{bar.className='status-bar offline';bar.textContent='Error al guardar';}
 }
 
 async function deleteMonthFromCloud(monthNum){
-  if(!confirm('¿Eliminar datos de '+MESES[monthNum]+'?')) return;
-  await fbDelete('months/'+monthNum);
-  delete monthsData[monthNum];
-  const keys = Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
-  selectedMonth = keys.length?keys[keys.length-1]:null;
-  refreshUI();
+  if(!confirm('¿Eliminar datos de '+MESES[monthNum]+'?'))return;
+  await fbDelete('months/'+monthNum);delete monthsData[monthNum];
+  const keys=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  selectedMonth=keys.length?keys[keys.length-1]:null;refreshUI();
 }
 
 /* ======================================================
-   ROLES Y LOGIN
+   ROLES
    ====================================================== */
 function selectRole(r){
-  if(r==='admin'){
-    document.getElementById('pwdSection').style.display='block';
-    document.querySelectorAll('.role-btn').forEach((b,i)=>b.classList.toggle('active',i===1));
-  } else {
-    role='viewer';
-    document.getElementById('modalBg').classList.remove('active');
-    startApp();
-  }
+  if(r==='admin'){document.getElementById('pwdSection').style.display='block';document.querySelectorAll('.role-btn').forEach((b,i)=>b.classList.toggle('active',i===1));}
+  else{role='viewer';document.getElementById('modalBg').classList.remove('active');startApp();}
 }
 function doLogin(){
-  if(document.getElementById('pwdInput').value===ADMIN_PWD){
-    role='admin';
-    document.getElementById('modalBg').classList.remove('active');
-    startApp();
-  } else {
-    document.getElementById('pwdErr').style.display='block';
-  }
+  if(document.getElementById('pwdInput').value===ADMIN_PWD){role='admin';document.getElementById('modalBg').classList.remove('active');startApp();}
+  else{document.getElementById('pwdErr').style.display='block';}
 }
 function startApp(){
   document.getElementById('mainApp').style.display='block';
-  if(role==='admin') document.getElementById('adminPanel').style.display='block';
+  if(role==='admin')document.getElementById('adminPanel').style.display='block';
   loadAllMonths();
+}
+
+/* ======================================================
+   PARSER DE NÚMEROS - formato US: 121,579,000.00
+   ====================================================== */
+function parseNum(str){
+  /* Quita espacios, quita comas (miles), deja el punto (decimal) */
+  const cleaned = str.replace(/\s/g,'').replace(/,/g,'');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
 }
 
 /* ======================================================
@@ -361,31 +349,35 @@ function startApp(){
    ====================================================== */
 async function handleFile(file){
   if(!file)return;
-  const status = document.getElementById('uploadStatus');
+  const status=document.getElementById('uploadStatus');
   status.style.display='block';
   status.innerHTML='<div class="loading-spinner">Procesando PDF...</div>';
 
   try{
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
-    let items = [];
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let items=[];
     for(let p=1;p<=pdf.numPages;p++){
-      const page = await pdf.getPage(p);
-      const tc = await page.getTextContent();
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
       tc.items.forEach(it=>{
-        if(it.str.trim()) items.push({t:it.str.trim(), x:Math.round(it.transform[4]), y:Math.round(it.transform[5])});
+        if(it.str.trim())items.push({t:it.str.trim(),x:Math.round(it.transform[4]),y:Math.round(it.transform[5])});
       });
     }
 
-    const month = detectMonth(items);
-    const accounts = extractAccounts(items);
+    const month=detectMonth(items);
+    const accounts=extractAccounts(items);
+    const count=Object.keys(accounts).length;
 
-    if(!month){status.innerHTML='<p style="color:var(--red);font-weight:600">No se detectó el mes del balance. Verifica el PDF.</p>';return;}
-    if(Object.keys(accounts).length===0){status.innerHTML='<p style="color:var(--red);font-weight:600">No se encontraron cuentas en el PDF.</p>';return;}
+    console.log('Mes detectado:',month,'Cuentas:',count);
+    console.log('Cuentas encontradas:',JSON.stringify(accounts,null,2));
+
+    if(!month){status.innerHTML='<p style="color:var(--red);font-weight:600">No se detectó el mes. Verifica el PDF.</p>';return;}
+    if(count===0){status.innerHTML='<p style="color:var(--red);font-weight:600">No se encontraron cuentas válidas (0 cuentas). Revisa la consola (F12) para diagnóstico.</p>';return;}
 
     status.innerHTML='<div class="loading-spinner">Guardando en la nube...</div>';
-    await saveMonthToCloud(month, accounts);
-    status.innerHTML='<p style="color:var(--grn);font-weight:600">Balance de '+MESES[month]+' cargado exitosamente — '+Object.keys(accounts).length+' cuentas encontradas</p>';
+    await saveMonthToCloud(month,accounts);
+    status.innerHTML='<p style="color:var(--grn);font-weight:600">✓ '+MESES[month]+' cargado — '+count+' cuentas procesadas</p>';
 
   }catch(e){
     status.innerHTML='<p style="color:var(--red)">Error: '+e.message+'</p>';
@@ -394,92 +386,85 @@ async function handleFile(file){
 }
 
 function detectMonth(items){
-  const allText = items.map(i=>i.t).join(' ');
-  const mp = allText.match(/Periodo\s*:?\s*(\w+)\s+a\s+(\w+)/i);
+  const allText=items.map(i=>i.t).join(' ');
+  /* "Periodo: Enero a Febrero" → tomar el segundo mes */
+  const mp=allText.match(/Periodo\s*:?\s*(\w+)\s+a\s+(\w+)/i);
   if(mp){
-    const mName = mp[2].toLowerCase().substring(0,3);
-    if(MESES_SHORT[mName]) return MESES_SHORT[mName];
+    const m2=mp[2].toLowerCase().substring(0,3);
+    if(MESES_SHORT[m2])return MESES_SHORT[m2];
   }
+  /* "Saldo Mar/26" */
   for(let i=12;i>=1;i--){
-    const re = new RegExp('Saldo\\s+'+MESES[i].substring(0,3),'i');
-    if(re.test(allText)) return i;
+    const re=new RegExp('Saldo\\s+'+MESES[i].substring(0,3),'i');
+    if(re.test(allText))return i;
   }
+  /* Nombre del mes en texto */
   for(let i=12;i>=1;i--){
-    const re = new RegExp('\\b'+MESES[i]+'\\b','i');
-    if(re.test(allText)) return i;
+    const re=new RegExp('\\b'+MESES[i]+'\\b','i');
+    if(re.test(allText))return i;
   }
   return null;
 }
 
 function extractAccounts(items){
-  const rows = [];
-  const sorted = [...items].sort((a,b)=> b.y-a.y || a.x-b.x);
-  let curY = null, curRow = [];
-
+  /* 1. Agrupar items por Y (tolerancia 4px) → filas */
+  const sorted=[...items].sort((a,b)=>b.y-a.y||a.x-b.x);
+  const rows=[];
+  let curY=null, curRow=[];
   sorted.forEach(it=>{
-    if(curY===null || Math.abs(it.y-curY)>4){
-      if(curRow.length) rows.push({y:curY, items:[...curRow]});
-      curY=it.y; curRow=[it];
-    } else {
-      curRow.push(it);
-    }
+    if(curY===null||Math.abs(it.y-curY)>4){
+      if(curRow.length)rows.push({y:curY,items:[...curRow]});
+      curY=it.y;curRow=[it];
+    }else{curRow.push(it);}
   });
-  if(curRow.length) rows.push({y:curY, items:[...curRow]});
+  if(curRow.length)rows.push({y:curY,items:[...curRow]});
 
-  const accounts = {};
-  const codeRe = /^[1-9]\d{3,7}$/;
+  const accounts={};
+  const codeRe=/^[1-9]\d{3,7}$/;
 
   for(let ri=0;ri<rows.length;ri++){
-    const row = rows[ri];
-    const txts = row.items.sort((a,b)=>a.x-b.x);
-    const first = txts[0].t.replace(/\s/g,'');
+    const txts=rows[ri].items.sort((a,b)=>a.x-b.x);
+    const first=txts[0].t.replace(/\s/g,'');
 
-    if(!codeRe.test(first)) continue;
+    if(!codeRe.test(first))continue;
+    if(!isRelevantCode(first))continue;
 
-    const code = first;
-    let nums = [];
+    const code=first;
+
+    /* Recoger TODOS los números de esta fila */
+    let nums=[];
     txts.forEach(it=>{
-      const cleaned = it.t.replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
-      const n = parseFloat(cleaned);
-      if(!isNaN(n) && cleaned !== code) nums.push(n);
+      const n=parseNum(it.t);
+      if(n!==null && it.t.replace(/\s/g,'')!==code && it.t.indexOf('.')!==-1) nums.push(n);
     });
 
-    // Lookahead: if no numbers, check next 1-2 rows
-    if(nums.length<2){
-      for(let la=1;la<=2 && ri+la<rows.length;la++){
-        const nextRow = rows[ri+la];
-        const nextFirst = nextRow.items[0].t.replace(/\s/g,'');
-        if(codeRe.test(nextFirst)) break;
+    /* Lookahead: si no hay números, revisar 1-2 filas siguientes */
+    if(nums.length<1){
+      for(let la=1;la<=2&&ri+la<rows.length;la++){
+        const nextRow=rows[ri+la];
+        const nf=nextRow.items[0].t.replace(/\s/g,'');
+        if(codeRe.test(nf))break;
         nextRow.items.forEach(it=>{
-          const cleaned = it.t.replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
-          const n = parseFloat(cleaned);
-          if(!isNaN(n)) nums.push(n);
+          const n=parseNum(it.t);
+          if(n!==null && it.t.indexOf('.')!==-1) nums.push(n);
         });
-        if(nums.length>=2) break;
+        if(nums.length>=1)break;
       }
     }
 
-    let name = '';
+    /* Nombre de la cuenta */
+    let name='';
     for(let i=1;i<txts.length;i++){
-      const t = txts[i].t;
-      if(!/^[\d.,\-\s]+$/.test(t) && t!==code){name=t;break;}
+      const t=txts[i].t;
+      if(parseNum(t)===null && t!==code){name=t;break;}
     }
 
-    if(nums.length >= 3){
-      accounts[code] = {
-        name: name || (B[code]?B[code].n:code),
-        saldoAnt: nums[0]||0,
-        debito: nums[1]||0,
-        credito: nums[2]||0,
-        saldo: nums[3]||nums[0]||0
-      };
-    } else if(nums.length >= 1){
-      accounts[code] = {
-        name: name || (B[code]?B[code].n:code),
-        saldoAnt: 0,
-        debito: nums[0]||0,
-        credito: nums.length>1?nums[1]:0,
-        saldo: nums.length>1?nums[1]:nums[0]||0
+    /* CLAVE: tomar el ÚLTIMO número como saldo acumulado */
+    if(nums.length>=1){
+      const saldo=nums[nums.length-1];
+      accounts[code]={
+        name:name||(B[code]?B[code].n:code),
+        saldo:saldo
       };
     }
   }
@@ -487,189 +472,173 @@ function extractAccounts(items){
 }
 
 /* ======================================================
+   BUSCAR SALDO: exacto o sumar sub-cuentas
+   ====================================================== */
+function findSaldo(accounts,code){
+  if(accounts[code])return accounts[code].saldo||0;
+  let sum=0,found=false;
+  Object.keys(accounts).forEach(k=>{
+    if(k.startsWith(code)&&k!==code){sum+=accounts[k].saldo||0;found=true;}
+  });
+  return found?sum:0;
+}
+
+/* ======================================================
    UI REFRESH
    ====================================================== */
 function refreshUI(){
-  const monthNums = Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  const monthNums=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
 
   if(monthNums.length===0){
-    ['monthsCard','kpiSection','tblCard','chartCard','accumCard'].forEach(id=>{
-      document.getElementById(id).style.display='none';
-    });
+    ['monthsCard','kpiSection','tblCard','chartCard','accumCard'].forEach(id=>document.getElementById(id).style.display='none');
     return;
   }
 
+  /* Month pills */
   document.getElementById('monthsCard').style.display='block';
-  const pillsDiv = document.getElementById('monthPills');
+  const pillsDiv=document.getElementById('monthPills');
   pillsDiv.innerHTML='';
   monthNums.forEach(m=>{
-    const pill = document.createElement('span');
+    const pill=document.createElement('span');
     pill.className='pill'+(selectedMonth==m?' active':'');
     pill.innerHTML=MESES[m]+(role==='admin'?'<span class="del" onclick="event.stopPropagation();deleteMonthFromCloud('+m+')">&times;</span>':'');
     pill.onclick=()=>{selectedMonth=m;refreshUI();};
     pillsDiv.appendChild(pill);
   });
 
-  if(!selectedMonth || !monthsData[selectedMonth]) selectedMonth = monthNums[monthNums.length-1];
+  if(!selectedMonth||!monthsData[selectedMonth])selectedMonth=monthNums[monthNums.length-1];
 
   document.querySelectorAll('.pill').forEach(p=>{
-    if(p.textContent.replace('×','').trim()===MESES[selectedMonth]) p.classList.add('active');
-    else p.classList.remove('active');
+    const txt=p.textContent.replace('×','').trim();
+    p.classList.toggle('active',txt===MESES[selectedMonth]);
   });
 
-  const mData = monthsData[selectedMonth];
-  if(!mData || !mData.accounts) return;
+  const mData=monthsData[selectedMonth];
+  if(!mData||!mData.accounts)return;
 
-  buildReport(mData.accounts, selectedMonth, monthNums);
+  buildReport(mData.accounts,selectedMonth,monthNums);
 }
 
-function findAccum(accumAccounts, code, field){
-  if(accumAccounts[code]) return accumAccounts[code][field]||0;
-  let sum=0;
-  Object.keys(accumAccounts).forEach(k=>{
-    if(k.startsWith(code)&&k!==code) sum+=accumAccounts[k][field]||0;
-  });
-  return sum;
-}
+/* ======================================================
+   BUILD REPORT
+   El saldo de cada mes YA es acumulado (el Balance de SISCO
+   acumula automáticamente). Usamos directamente el saldo
+   del mes seleccionado.
+   ====================================================== */
+function buildReport(accounts,monthNum,allMonths){
+  const fmt=n=>n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const pct=(v,t)=>t>0?(v/t*100).toFixed(2):'0.00';
 
-function buildReport(accounts, monthNum, allMonths){
-  // Accumulated across all months up to selected
-  const accumAccounts = {};
-  allMonths.filter(m=>m<=monthNum).forEach(m=>{
-    const ma = monthsData[m]?.accounts||{};
-    Object.keys(ma).forEach(code=>{
-      if(!accumAccounts[code]) accumAccounts[code]={debito:0,credito:0};
-      accumAccounts[code].debito += ma[code].debito||0;
-      accumAccounts[code].credito += ma[code].credito||0;
-    });
-  });
-
-  const fmt = n => n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});
-  const pct = (v,t) => t>0?(v/t*100).toFixed(2):'0.00';
-
-  // Income rows
-  const ingCodes = Object.keys(B).filter(c=>c.startsWith('4'));
-  let totalIngEjec = 0;
-  let ingRows = [];
+  /* INGRESOS */
+  const ingCodes=Object.keys(B).filter(c=>B[c].t==='I');
+  let totalIngEjec=0;
+  let ingRows=[];
 
   ingCodes.forEach(code=>{
-    const bp = B[code];
-    const credito = findAccum(accumAccounts, code, 'credito');
-    totalIngEjec += credito;
-    const pEjec = pct(credito, bp.a);
-    const pRest = bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-    const sem = parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
-    ingRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec:credito,pEjec,pRest,sem,isTotal:false});
+    const bp=B[code];
+    const ejec=findSaldo(accounts,code);
+    totalIngEjec+=ejec;
+    const pEjec=pct(ejec,bp.a);
+    const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
+    const sem=parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
+    ingRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec,pEjec,pRest,sem,isTotal:false});
   });
 
-  // Expense rows by category
-  let gasRows = [];
-  let totalGasEjec = 0;
-  const catExec = {};
+  /* GASTOS por categoría */
+  let gasRows=[];
+  let totalGasEjec=0;
+  const catExec={};
 
-  Object.entries(CAT_GASTOS).forEach(([cat, codes])=>{
-    let catTotal = 0;
-    let catAnual = CAT_TOT_ANUAL[cat]||0;
-    let catRows = [];
+  Object.entries(CAT_GASTOS).forEach(([cat,codes])=>{
+    let catTotal=0;
+    let catAnual=CAT_TOT_ANUAL[cat]||0;
+    let catRows=[];
 
     codes.forEach(code=>{
-      const bp = B[code];
-      if(!bp) return;
-      const debito = findAccum(accumAccounts, code, 'debito');
-      catTotal += debito;
-      totalGasEjec += debito;
-      const pEjec = pct(debito, bp.a);
-      const pRest = bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-      const sem = parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
-      catRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec:debito,pEjec,pRest,sem,isTotal:false});
+      const bp=B[code];if(!bp)return;
+      const ejec=findSaldo(accounts,code);
+      catTotal+=ejec;
+      totalGasEjec+=ejec;
+      const pEjec=pct(ejec,bp.a);
+      const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
+      const sem=parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
+      catRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec,pEjec,pRest,sem,isTotal:false});
     });
 
-    catExec[cat] = catTotal;
-    const cpEjec = pct(catTotal, catAnual);
-    const cpRest = catAnual>0?(100-parseFloat(cpEjec)).toFixed(2):'0.00';
-    const csem = parseFloat(cpEjec)>70?'r':parseFloat(cpEjec)>50?'y':'g';
+    catExec[cat]=catTotal;
+    const cpEjec=pct(catTotal,catAnual);
+    const cpRest=catAnual>0?(100-parseFloat(cpEjec)).toFixed(2):'0.00';
+    const csem=parseFloat(cpEjec)>70?'r':parseFloat(cpEjec)>50?'y':'g';
 
     gasRows.push({code:'',name:'▸ '+cat,anual:catAnual,mes:Math.round(catAnual/12),ejec:catTotal,pEjec:cpEjec,pRest:cpRest,sem:csem,isTotal:true});
-    gasRows = gasRows.concat(catRows);
+    gasRows=gasRows.concat(catRows);
   });
 
-  // KPIs
+  /* KPIs */
   document.getElementById('kpiSection').style.display='block';
-  const excedente = totalIngEjec - totalGasEjec;
-  document.getElementById('kpiGrid').innerHTML = `
-    <div class="kpi"><div class="val">$${fmt(totalIngEjec)}</div><div class="lbl">Ingresos Ejecutados (Acum.)</div></div>
-    <div class="kpi"><div class="val">$${fmt(totalGasEjec)}</div><div class="lbl">Gastos Ejecutados (Acum.)</div></div>
+  const excedente=totalIngEjec-totalGasEjec;
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi"><div class="val">$${fmt(totalIngEjec)}</div><div class="lbl">Ingresos Ejecutados (Acum. ${MESES[monthNum]})</div></div>
+    <div class="kpi"><div class="val">$${fmt(totalGasEjec)}</div><div class="lbl">Gastos Ejecutados (Acum. ${MESES[monthNum]})</div></div>
     <div class="kpi"><div class="val" style="color:${excedente>=0?'var(--grn)':'var(--red)'}">$${fmt(excedente)}</div><div class="lbl">Excedente / Déficit</div></div>
     <div class="kpi"><div class="val">${pct(totalGasEjec,TOTALS.gasAnual)}%</div><div class="lbl">% Presupuesto Gastado</div></div>
   `;
 
-  // Tables
+  /* Tablas */
   document.getElementById('tblCard').style.display='block';
-  renderTable('tblIng', ingRows);
-  renderTable('tblGas', gasRows);
+  renderTable('tblIng',ingRows);
+  renderTable('tblGas',gasRows);
 
-  // Summary
-  const tblRes = document.getElementById('tblRes');
-  const piNG = pct(totalIngEjec,TOTALS.ingAnual);
-  const piGS = pct(totalGasEjec,TOTALS.gasAnual);
-  tblRes.innerHTML = `<thead><tr><th>Concepto</th><th>Ppto Anual</th><th>Ejecutado Acum.</th><th>% Ejec.</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>
+  /* Resumen */
+  const tblRes=document.getElementById('tblRes');
+  const piNG=pct(totalIngEjec,TOTALS.ingAnual);
+  const piGS=pct(totalGasEjec,TOTALS.gasAnual);
+  tblRes.innerHTML=`<thead><tr><th>Concepto</th><th>Ppto Anual</th><th>Ejecutado Acum.</th><th>% Ejec.</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>
     <tr class="tot-row"><td>Total Ingresos</td><td>$${fmt(TOTALS.ingAnual)}</td><td>$${fmt(totalIngEjec)}</td><td>${piNG}%</td><td>${(100-parseFloat(piNG)).toFixed(2)}%</td><td>$${fmt(TOTALS.ingAnual-totalIngEjec)}</td><td><span class="sem sem-${parseFloat(piNG)>70?'r':parseFloat(piNG)>50?'y':'g'}"></span></td></tr>
     <tr class="tot-row"><td>Total Gastos</td><td>$${fmt(TOTALS.gasAnual)}</td><td>$${fmt(totalGasEjec)}</td><td>${piGS}%</td><td>${(100-parseFloat(piGS)).toFixed(2)}%</td><td>$${fmt(TOTALS.gasAnual-totalGasEjec)}</td><td><span class="sem sem-${parseFloat(piGS)>70?'r':parseFloat(piGS)>50?'y':'g'}"></span></td></tr>
-    <tr class="tot-row" style="background:#${excedente>=0?'e8f5e9':'fde8e8'} !important"><td>Excedente/Déficit</td><td>$${fmt(TOTALS.ingAnual-TOTALS.gasAnual)}</td><td>$${fmt(excedente)}</td><td colspan="4" style="text-align:center;font-size:1.1em;color:${excedente>=0?'var(--grn)':'var(--red)'}">${excedente>=0?'SUPERÁVIT':'DÉFICIT'}</td></tr>
+    <tr class="tot-row" style="background:#${excedente>=0?'f5e6ec':'fde8e8'} !important"><td>Excedente/Déficit</td><td>$${fmt(TOTALS.ingAnual-TOTALS.gasAnual)}</td><td>$${fmt(excedente)}</td><td colspan="4" style="text-align:center;font-size:1.1em;color:${excedente>=0?'var(--grn)':'var(--red)'}">${excedente>=0?'SUPERÁVIT':'DÉFICIT'}</td></tr>
   </tbody>`;
 
-  // Charts
+  /* Charts */
   document.getElementById('chartCard').style.display='block';
   drawRadar(catExec);
   drawPie(catExec);
 
-  if(allMonths.length > 0){
+  if(allMonths.length>0){
     document.getElementById('accumCard').style.display='block';
     drawBar(allMonths);
   }
 }
 
-function renderTable(id, rows){
-  const tbl = document.getElementById(id);
-  let html = '<thead><tr><th>Cuenta</th><th>Descripción</th><th>Ppto Anual</th><th>Ppto Mes</th><th>Ejecutado Acum.</th><th>% Ejec. Anual</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>';
+function renderTable(id,rows){
+  const tbl=document.getElementById(id);
+  let html='<thead><tr><th>Cuenta</th><th>Descripción</th><th>Ppto Anual</th><th>Ppto Mes</th><th>Ejecutado Acum.</th><th>% Ejec. Anual</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    const cls = r.isTotal?'class="tot-row"':'';
-    const saldo = r.anual - r.ejec;
-    html+=`<tr ${cls}>
-      <td>${r.code}</td><td>${r.name}</td>
-      <td>$${fmt2(r.anual)}</td><td>$${fmt2(r.mes)}</td>
-      <td>$${fmt2(r.ejec)}</td>
-      <td>${r.pEjec}%</td><td>${r.pRest}%</td>
-      <td style="color:${saldo>=0?'var(--grn)':'var(--red)'}">$${fmt2(saldo)}</td>
-      <td><span class="sem sem-${r.sem}"></span></td>
-    </tr>`;
+    const cls=r.isTotal?'class="tot-row"':'';
+    const saldo=r.anual-r.ejec;
+    html+=`<tr ${cls}><td>${r.code}</td><td>${r.name}</td><td>$${fmt2(r.anual)}</td><td>$${fmt2(r.mes)}</td><td>$${fmt2(r.ejec)}</td><td>${r.pEjec}%</td><td>${r.pRest}%</td><td style="color:${saldo>=0?'var(--grn)':'var(--red)'}">$${fmt2(saldo)}</td><td><span class="sem sem-${r.sem}"></span></td></tr>`;
   });
-  html+='</tbody>';
-  tbl.innerHTML=html;
+  html+='</tbody>';tbl.innerHTML=html;
 }
 
 function fmt2(n){return n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
 /* ======================================================
-   CHARTS
+   CHARTS - colores vinotinto
    ====================================================== */
 function drawRadar(catExec){
-  const canvas = document.getElementById('radarChart');
-  const ctx = canvas.getContext('2d');
-  const W=canvas.width, H=canvas.height, cx=W/2, cy=H/2, R=Math.min(W,H)/2-60;
+  const canvas=document.getElementById('radarChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=Math.min(W,H)/2-60;
   ctx.clearRect(0,0,W,H);
 
-  const cats = Object.keys(CAT_TOT_ANUAL).filter(c=>CAT_TOT_ANUAL[c]>0);
-  const n = cats.length;
-  if(n<3) return;
-  const angle = i => (Math.PI*2*i/n) - Math.PI/2;
+  const cats=Object.keys(CAT_TOT_ANUAL).filter(c=>CAT_TOT_ANUAL[c]>0);
+  const n=cats.length;if(n<3)return;
+  const angle=i=>(Math.PI*2*i/n)-Math.PI/2;
 
   [0.25,0.5,0.7,1].forEach(level=>{
     ctx.beginPath();
-    for(let i=0;i<=n;i++){
-      const a=angle(i%n), x=cx+Math.cos(a)*R*level, y=cy+Math.sin(a)*R*level;
-      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    }
+    for(let i=0;i<=n;i++){const a=angle(i%n),x=cx+Math.cos(a)*R*level,y=cy+Math.sin(a)*R*level;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
     ctx.closePath();
     if(level===0.7){ctx.strokeStyle='#e74c3c';ctx.lineWidth=2;ctx.setLineDash([5,5]);}
     else{ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.setLineDash([]);}
@@ -681,35 +650,28 @@ function drawRadar(catExec){
   ctx.fillText('70% ALERTA',cx+Math.cos(a70)*R*0.7+5,cy+Math.sin(a70)*R*0.7-5);
 
   cats.forEach((cat,i)=>{
-    const a=angle(i);
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
+    const a=angle(i);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
     ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.stroke();
-    const lx=cx+Math.cos(a)*(R+25), ly=cy+Math.sin(a)*(R+25);
+    const lx=cx+Math.cos(a)*(R+25),ly=cy+Math.sin(a)*(R+25);
     ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     cat.split(' ').forEach((w,wi)=>ctx.fillText(w,lx,ly+wi*13));
   });
 
   ctx.beginPath();
   cats.forEach((cat,i)=>{
-    const exec = catExec[cat]||0;
-    const total = CAT_TOT_ANUAL[cat];
-    const pctVal = Math.min(exec/total, 1.2);
-    const a=angle(i);
-    const x=cx+Math.cos(a)*R*pctVal, y=cy+Math.sin(a)*R*pctVal;
+    const exec=catExec[cat]||0;const total=CAT_TOT_ANUAL[cat];
+    const pctVal=Math.min(exec/total,1.2);const a=angle(i);
+    const x=cx+Math.cos(a)*R*pctVal,y=cy+Math.sin(a)*R*pctVal;
     i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
   });
   ctx.closePath();
-  ctx.fillStyle='rgba(26,86,50,0.2)';ctx.fill();
-  ctx.strokeStyle='#1a5632';ctx.lineWidth=2.5;ctx.stroke();
+  ctx.fillStyle='rgba(123,30,59,0.15)';ctx.fill();
+  ctx.strokeStyle='#7B1E3B';ctx.lineWidth=2.5;ctx.stroke();
 
   cats.forEach((cat,i)=>{
-    const exec = catExec[cat]||0;
-    const total = CAT_TOT_ANUAL[cat];
-    const pctVal = Math.min(exec/total,1.2);
-    const pctNum = exec/total*100;
-    const a=angle(i);
-    const x=cx+Math.cos(a)*R*pctVal, y=cy+Math.sin(a)*R*pctVal;
+    const exec=catExec[cat]||0;const total=CAT_TOT_ANUAL[cat];
+    const pctVal=Math.min(exec/total,1.2);const pctNum=exec/total*100;const a=angle(i);
+    const x=cx+Math.cos(a)*R*pctVal,y=cy+Math.sin(a)*R*pctVal;
     ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
     ctx.fillStyle=pctNum>70?'#e74c3c':pctNum>50?'#f39c12':'#27ae60';
     ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
@@ -719,91 +681,74 @@ function drawRadar(catExec){
 }
 
 function drawPie(catExec){
-  const canvas = document.getElementById('pieChart');
-  const ctx = canvas.getContext('2d');
-  const W=canvas.width, H=canvas.height;
-  ctx.clearRect(0,0,W,H);
+  const canvas=document.getElementById('pieChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
 
-  const colors=['#1a5632','#2d8a4e','#3cb371','#66cdaa','#f39c12','#e74c3c','#9b59b6','#3498db','#1abc9c','#95a5a6'];
-  const cats = Object.keys(catExec).filter(c=>catExec[c]>0);
-  const total = cats.reduce((s,c)=>s+catExec[c],0);
-  if(total===0) return;
+  const colors=['#7B1E3B','#9B3A5A','#C2185B','#E91E63','#f39c12','#e74c3c','#9b59b6','#3498db','#1abc9c','#95a5a6'];
+  const cats=Object.keys(catExec).filter(c=>catExec[c]>0);
+  const total=cats.reduce((s,c)=>s+catExec[c],0);if(total===0)return;
 
-  const cx=W/2-80, cy=H/2, R=Math.min(W,H)/2-40;
+  const cx2=W/2-80,cy2=H/2,R2=Math.min(W,H)/2-40;
   let startAngle=-Math.PI/2;
 
   cats.forEach((cat,i)=>{
-    const slice = (catExec[cat]/total)*Math.PI*2;
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,R,startAngle,startAngle+slice);
-    ctx.closePath();
-    ctx.fillStyle=colors[i%colors.length];ctx.fill();
-    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    const mid=startAngle+slice/2;
-    const lx=cx+Math.cos(mid)*(R*0.65), ly=cy+Math.sin(mid)*(R*0.65);
-    if(slice>0.15){
-      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
-      ctx.fillText((catExec[cat]/total*100).toFixed(1)+'%',lx,ly);
-    }
+    const slice=(catExec[cat]/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.arc(cx2,cy2,R2,startAngle,startAngle+slice);ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    const mid=startAngle+slice/2;const lx=cx2+Math.cos(mid)*(R2*0.65),ly=cy2+Math.sin(mid)*(R2*0.65);
+    if(slice>0.15){ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText((catExec[cat]/total*100).toFixed(1)+'%',lx,ly);}
     startAngle+=slice;
   });
 
-  const lx=W-150, ly=30;
+  const lx=W-150,ly=30;
   cats.forEach((cat,i)=>{
-    ctx.fillStyle=colors[i%colors.length];
-    ctx.fillRect(lx,ly+i*22,14,14);
-    ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='left';
-    ctx.fillText(cat,lx+20,ly+i*22+11);
+    ctx.fillStyle=colors[i%colors.length];ctx.fillRect(lx,ly+i*22,14,14);
+    ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText(cat,lx+20,ly+i*22+11);
   });
 }
 
 function drawBar(allMonths){
-  const canvas = document.getElementById('barChart');
-  const ctx = canvas.getContext('2d');
-  const W=canvas.width, H=canvas.height;
-  ctx.clearRect(0,0,W,H);
-
+  const canvas=document.getElementById('barChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
   const pad={t:40,b:60,l:100,r:30};
-  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
 
-  const ingData=[], gasData=[];
+  /* Para cada mes: calcular ingresos y gastos del saldo de ese mes */
+  const ingData=[],gasData=[];
   allMonths.forEach(m=>{
-    const accs = monthsData[m]?.accounts||{};
-    let ing=0, gas=0;
+    const accs=monthsData[m]?.accounts||{};
+    let ing=0,gas=0;
     Object.keys(accs).forEach(code=>{
-      if(code.startsWith('4')) ing+=accs[code].credito||0;
-      else if(code.startsWith('5')||code.startsWith('53')) gas+=accs[code].debito||0;
+      const s=accs[code].saldo||0;
+      if(code.startsWith('4')&&code.length>=8)ing+=s;
+      else if(code.startsWith('5')&&code.length>=6)gas+=s;
     });
     ingData.push({m,v:ing});
     gasData.push({m,v:gas});
   });
 
-  const maxV = Math.max(...ingData.map(d=>d.v),...gasData.map(d=>d.v),1);
-  const barW = Math.min(40, cw/(allMonths.length*3));
+  const maxV=Math.max(...ingData.map(d=>d.v),...gasData.map(d=>d.v),1);
+  const barW=Math.min(40,cw/(allMonths.length*3));
 
   ctx.strokeStyle='#eee';ctx.lineWidth=1;
   for(let i=0;i<=5;i++){
-    const y=pad.t+ch*(1-i/5);
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';
-    ctx.fillText('$'+fmt2(maxV*i/5),pad.l-10,y+4);
+    const y=pad.t+ch*(1-i/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';ctx.fillText('$'+fmt2(maxV*i/5),pad.l-10,y+4);
   }
 
   allMonths.forEach((m,i)=>{
     const x=pad.l+i*(cw/allMonths.length)+cw/(allMonths.length*2)-barW;
-    const hIng=ingData[i].v/maxV*ch;
-    const hGas=gasData[i].v/maxV*ch;
-    ctx.fillStyle='#27ae60';
-    ctx.fillRect(x,pad.t+ch-hIng,barW,hIng);
-    ctx.fillStyle='#e74c3c';
-    ctx.fillRect(x+barW+4,pad.t+ch-hGas,barW,hGas);
+    const hIng=ingData[i].v/maxV*ch;const hGas=gasData[i].v/maxV*ch;
+    ctx.fillStyle='#7B1E3B';ctx.fillRect(x,pad.t+ch-hIng,barW,hIng);
+    ctx.fillStyle='#e74c3c';ctx.fillRect(x+barW+4,pad.t+ch-hGas,barW,hGas);
     ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='center';
     ctx.fillText(MESES[m].substring(0,3),x+barW+2,H-pad.b+20);
   });
 
-  ctx.fillStyle='#27ae60';ctx.fillRect(pad.l,H-25,14,14);
-  ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='left';
-  ctx.fillText('Ingresos',pad.l+20,H-14);
+  ctx.fillStyle='#7B1E3B';ctx.fillRect(pad.l,H-25,14,14);
+  ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('Ingresos',pad.l+20,H-14);
   ctx.fillStyle='#e74c3c';ctx.fillRect(pad.l+100,H-25,14,14);
   ctx.fillStyle='#333';ctx.fillText('Gastos',pad.l+120,H-14);
 }
@@ -812,26 +757,19 @@ function drawBar(allMonths){
    CSV EXPORT
    ====================================================== */
 function exportCSV(){
-  if(!selectedMonth || !monthsData[selectedMonth]) return;
-  const accs = monthsData[selectedMonth].accounts;
-  let csv='Cuenta,Descripción,Ppto Anual,Ppto Mes,Ejecutado,% Ejec Anual,% Restante,Saldo,Semáforo\n';
+  if(!selectedMonth||!monthsData[selectedMonth])return;
+  const accs=monthsData[selectedMonth].accounts;
+  let csv='Cuenta,Descripción,Ppto Anual,Ppto Mes,Ejecutado Acum,% Ejec Anual,% Restante,Saldo,Semáforo\n';
   Object.keys(B).forEach(code=>{
     const bp=B[code];
-    const isIng=code.startsWith('4');
-    const field=isIng?'credito':'debito';
-    let ejec=0;
-    if(accs[code]) ejec=accs[code][field]||0;
-    else Object.keys(accs).forEach(k=>{if(k.startsWith(code)&&k!==code) ejec+=accs[k][field]||0;});
-    const pEjec = bp.a>0?(ejec/bp.a*100).toFixed(2):'0.00';
-    const pRest = bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-    const sem = parseFloat(pEjec)>70?'ROJO':parseFloat(pEjec)>50?'AMARILLO':'VERDE';
+    const ejec=findSaldo(accs,code);
+    const pEjec=bp.a>0?(ejec/bp.a*100).toFixed(2):'0.00';
+    const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
+    const sem=parseFloat(pEjec)>70?'ROJO':parseFloat(pEjec)>50?'AMARILLO':'VERDE';
     csv+=`${code},"${bp.n}",${bp.a},${bp.m},${ejec},${pEjec}%,${pRest}%,${bp.a-ejec},${sem}\n`;
   });
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a = document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`Ejecucion_ElRoble_${MESES[selectedMonth]}_2026.csv`;
-  a.click();
+  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`Ejecucion_ElRoble_${MESES[selectedMonth]}_2026.csv`;a.click();
 }
 
 /* ======================================================
@@ -839,9 +777,9 @@ function exportCSV(){
    ====================================================== */
 const dz=document.getElementById('dropZone');
 if(dz){
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--pri2)';dz.style.background='#e0f0e0';});
-  dz.addEventListener('dragleave',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#f0f8f0';});
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#f0f8f0';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--pri2)';dz.style.background='var(--pri-light)';});
+  dz.addEventListener('dragleave',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#fdf0f4';});
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#fdf0f4';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
 }
 </script>
 </body>
