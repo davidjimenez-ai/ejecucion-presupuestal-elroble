@@ -18,7 +18,6 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 .card h2{color:var(--pri);margin-bottom:15px;font-size:1.2em;border-bottom:2px solid var(--pri);padding-bottom:8px}
 .btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.95em;font-weight:600;transition:.2s}
 .btn-pri{background:var(--pri);color:#fff}.btn-pri:hover{background:var(--pri2)}
-.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#c0392b}
 .btn-sm{padding:5px 12px;font-size:.8em}
 table{width:100%;border-collapse:collapse;font-size:.85em}
 th{background:var(--pri);color:#fff;padding:10px 8px;text-align:left;position:sticky;top:0}
@@ -58,6 +57,7 @@ canvas{max-width:100%;height:auto}
 .loading-spinner{text-align:center;padding:40px;color:var(--txt2)}
 .loading-spinner::after{content:'';display:block;width:40px;height:40px;margin:15px auto;border:4px solid var(--brd);border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.debug-box{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:15px;margin-top:10px;font-size:.8em;max-height:200px;overflow-y:auto;display:none}
 @media(max-width:768px){.header h1{font-size:1.2em}.kpi .val{font-size:1.3em}th,td{padding:6px 4px;font-size:.75em}.charts-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -68,7 +68,7 @@ canvas{max-width:100%;height:auto}
   <p>Control de Ejecución Presupuestal 2026</p>
 </div>
 
-<div id="statusBar" class="status-bar loading-bar">Conectando a la base de datos...</div>
+<div id="statusBar" class="status-bar loading-bar">Conectando...</div>
 
 <!-- Modal de acceso -->
 <div id="modalBg" class="modal-bg active">
@@ -95,7 +95,6 @@ canvas{max-width:100%;height:auto}
 
 <div class="container" id="mainApp" style="display:none">
 
-  <!-- Admin: Upload area -->
   <div id="adminPanel" style="display:none">
     <div class="card">
       <h2>Cargar Balance de Pruebas</h2>
@@ -108,35 +107,28 @@ canvas{max-width:100%;height:auto}
     </div>
   </div>
 
-  <!-- Meses cargados -->
   <div class="card" id="monthsCard" style="display:none">
     <h2>Meses Disponibles</h2>
     <div class="month-pills" id="monthPills"></div>
   </div>
 
-  <!-- KPIs -->
   <div id="kpiSection" style="display:none">
     <div class="kpi-grid" id="kpiGrid"></div>
   </div>
 
-  <!-- Tablas -->
   <div class="card" id="tblCard" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px">
       <h2 style="border:none;padding:0;margin:0">Detalle de Ejecución Presupuestal</h2>
       <button class="btn btn-pri btn-sm" onclick="exportCSV()">Exportar CSV</button>
     </div>
-
     <h3 style="color:var(--pri);margin:15px 0 10px">Ingresos</h3>
     <div class="tbl-wrap"><table id="tblIng"></table></div>
-
     <h3 style="color:var(--pri);margin:20px 0 10px">Gastos</h3>
     <div class="tbl-wrap"><table id="tblGas"></table></div>
-
     <h3 style="color:var(--pri);margin:20px 0 10px">Resumen General</h3>
     <div class="tbl-wrap"><table id="tblRes"></table></div>
   </div>
 
-  <!-- Charts -->
   <div class="card" id="chartCard" style="display:none">
     <h2>Análisis Gráfico</h2>
     <div class="charts-grid">
@@ -145,7 +137,6 @@ canvas{max-width:100%;height:auto}
     </div>
   </div>
 
-  <!-- Acumulado -->
   <div class="card" id="accumCard" style="display:none">
     <h2>Ejecución Acumulada por Mes</h2>
     <canvas id="barChart" width="900" height="400"></canvas>
@@ -153,145 +144,100 @@ canvas{max-width:100%;height:auto}
 </div>
 
 <script>
-/* ======================================================
-   CONFIGURACIÓN
-   ====================================================== */
-const DB_URL = 'https://elroble-presupuesto-default-rtdb.firebaseio.com';
-const ADMIN_PWD = 'ElRoble2026';
+/* ============ CONFIG ============ */
+const DB_URL='https://elroble-presupuesto-default-rtdb.firebaseio.com';
+const ADMIN_PWD='ElRoble2026';
+const MESES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_SHORT={'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12};
+let role=null,monthsData={},selectedMonth=null;
 
-const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const MESES_SHORT = {'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12};
-
-let role = null;
-let monthsData = {};
-let selectedMonth = null;
-
-/* ======================================================
-   PRESUPUESTO 2026 (PPTO-2026 CON INCREMENTO)
-   Cada entrada: código PUC → nombre, anual, mensual
-   ====================================================== */
-const B = {
-  '41701001':{n:'Cuotas de Administración',a:1874298000,m:171810667,t:'I'},
-  '41701002':{n:'Intereses por Mora',a:0,m:0,t:'I'},
-  '41701003':{n:'Uso Zona Común Parqueaderos',a:0,m:0,t:'I'},
-  '41701005':{n:'Uso Zona Común Visitantes',a:0,m:0,t:'I'},
-  '41701006':{n:'Sanciones Convivencia',a:0,m:0,t:'I'},
-  '41701007':{n:'Sanciones de Inasistencia',a:0,m:0,t:'I'},
-  '41701008':{n:'CHIPS',a:1280000,m:106667,t:'I'},
-  '41701009':{n:'Uso Zona Común Fogata',a:0,m:0,t:'I'},
-  '41701010':{n:'Uso Zona Común BBQ',a:0,m:0,t:'I'},
-  '41701011':{n:'Uso Zona Común Motos',a:0,m:0,t:'I'},
-  '41701012':{n:'Uso Zona Común Maq. Dispensadora',a:0,m:0,t:'I'},
-  '511010':{n:'Revisoría Fiscal',a:15108000,m:1259000,t:'G'},
-  '511011':{n:'Asesoría Jurídica',a:6000000,m:500000,t:'G'},
-  '511022':{n:'SG SST',a:3500000,m:291667,t:'G'},
-  '511024':{n:'Contabilidad',a:24000000,m:2000000,t:'G'},
-  '51103001':{n:'Administrador',a:88855000,m:7404583,t:'G'},
-  '513060':{n:'Resp. Civil y Extracontractual',a:146872000,m:12239333,t:'G'},
-  '51350501':{n:'Servicio de Aseo',a:250413000,m:20867750,t:'G'},
-  '51350502':{n:'Servicio de Vigilancia',a:982282000,m:81856833,t:'G'},
-  '513525':{n:'Acueducto y Alcantarillado',a:9351000,m:779250,t:'G'},
-  '513530':{n:'Energía Eléctrica',a:132000000,m:11000000,t:'G'},
-  '513535':{n:'Teléfono e Internet',a:2136000,m:178000,t:'G'},
-  '513540':{n:'Correo, Portes y Telegramas',a:120000,m:10000,t:'G'},
-  '513555':{n:'Gas Natural',a:4625000,m:385417,t:'G'},
-  '514005':{n:'Notariales',a:300000,m:25000,t:'G'},
-  '51451501':{n:'Mto Equipo de Presión',a:30780000,m:2565000,t:'G'},
-  '51451502':{n:'Mto Ascensores',a:70160000,m:5846667,t:'G'},
-  '51451503':{n:'Lavado de Tanque',a:3600000,m:300000,t:'G'},
-  '51451504':{n:'Mto Planta Eléctrica',a:9700000,m:808333,t:'G'},
-  '51451505':{n:'Brazos Hidráulicos',a:13610000,m:1134167,t:'G'},
-  '51451506':{n:'Sistema de Detección',a:923000,m:76917,t:'G'},
-  '51451507':{n:'Certificación Ascensores',a:3162000,m:263500,t:'G'},
-  '51451508':{n:'Mto CCTV',a:2856000,m:238000,t:'G'},
-  '51451509':{n:'Mantenimiento Extintores',a:3168000,m:264000,t:'G'},
-  '51451510':{n:'Mto Cajas Residuales',a:16851000,m:1404250,t:'G'},
-  '51451512':{n:'Mto Software Contable',a:912000,m:76000,t:'G'},
-  '51451513':{n:'Licencias Software',a:0,m:0,t:'G'},
-  '51451514':{n:'Mto Cubiertas',a:5000000,m:416667,t:'G'},
-  '51451515':{n:'Otros Proyectos',a:0,m:0,t:'G'},
-  '51451517':{n:'Mto Alarmas',a:0,m:0,t:'G'},
-  '51451518':{n:'Fumigaciones',a:5680000,m:473333,t:'G'},
-  '51451519':{n:'Mantto Fogata y BBQ',a:16500000,m:1375000,t:'G'},
-  '51451520':{n:'Mantto Parqueadero',a:10984000,m:915333,t:'G'},
-  '514520':{n:'Equipo de Oficina',a:0,m:0,t:'G'},
-  '514525':{n:'Equipo Computación y Comunicación',a:1181000,m:98417,t:'G'},
-  '51500501':{n:'Bombillería',a:6272000,m:522667,t:'G'},
-  '515010':{n:'Jardinería',a:6200000,m:516667,t:'G'},
-  '515015':{n:'Reparaciones Locativas',a:7200000,m:600000,t:'G'},
-  '51952501':{n:'Insumos de Aseo',a:876000,m:73000,t:'G'},
-  '51952502':{n:'Cafetería',a:2028000,m:169000,t:'G'},
-  '519530':{n:'Útiles, Papelería y Fotocopias',a:2400000,m:200000,t:'G'},
-  '519545':{n:'Taxis y Buses',a:1296000,m:108000,t:'G'},
-  '51959504':{n:'Gastos Asamblea',a:26544000,m:2212000,t:'G'},
-  '51959506':{n:'Celebraciones',a:8868000,m:739000,t:'G'},
-  '51959507':{n:'Plan de Emergencias',a:14004000,m:1167000,t:'G'},
-  '51959508':{n:'Decoración Navideña',a:3600000,m:300000,t:'G'},
-  '519905':{n:'Fondo de Imprevistos',a:18756000,m:1563000,t:'G'},
-  '530505':{n:'Gastos Bancarios',a:0,m:0,t:'G'},
-  '530520':{n:'Intereses',a:0,m:0,t:'G'},
-  '531515':{n:'Costos Ejercicios Anteriores',a:0,m:0,t:'G'},
-  '531520':{n:'Impuestos Asumidos',a:0,m:0,t:'G'},
-  '539520':{n:'Multas, Sanciones y Litigios',a:0,m:0,t:'G'},
-  '539582':{n:'Ajuste al Peso',a:0,m:0,t:'G'}
+/* ============ PRESUPUESTO 2026 CON INCREMENTO ============ */
+const B={
+'41701001':{n:'Cuotas de Administración',a:1874298000,m:171810667,t:'I'},
+'41701002':{n:'Intereses por Mora',a:0,m:0,t:'I'},
+'41701003':{n:'Uso Zona Común Parqueaderos',a:0,m:0,t:'I'},
+'41701005':{n:'Uso Zona Común Visitantes',a:0,m:0,t:'I'},
+'41701006':{n:'Sanciones Convivencia',a:0,m:0,t:'I'},
+'41701007':{n:'Sanciones de Inasistencia',a:0,m:0,t:'I'},
+'41701008':{n:'CHIPS',a:1280000,m:106667,t:'I'},
+'41701009':{n:'Uso Zona Común Fogata',a:0,m:0,t:'I'},
+'41701010':{n:'Uso Zona Común BBQ',a:0,m:0,t:'I'},
+'41701011':{n:'Uso Zona Común Motos',a:0,m:0,t:'I'},
+'41701012':{n:'Uso Zona Común Maq. Dispensadora',a:0,m:0,t:'I'},
+'511010':{n:'Revisoría Fiscal',a:15108000,m:1259000,t:'G'},
+'511011':{n:'Asesoría Jurídica',a:6000000,m:500000,t:'G'},
+'511022':{n:'SG SST',a:3500000,m:291667,t:'G'},
+'511024':{n:'Contabilidad',a:24000000,m:2000000,t:'G'},
+'51103001':{n:'Administrador',a:88855000,m:7404583,t:'G'},
+'513060':{n:'Resp. Civil y Extracontractual',a:146872000,m:12239333,t:'G'},
+'51350501':{n:'Servicio de Aseo',a:250413000,m:20867750,t:'G'},
+'51350502':{n:'Servicio de Vigilancia',a:982282000,m:81856833,t:'G'},
+'513525':{n:'Acueducto y Alcantarillado',a:9351000,m:779250,t:'G'},
+'513530':{n:'Energía Eléctrica',a:132000000,m:11000000,t:'G'},
+'513535':{n:'Teléfono e Internet',a:2136000,m:178000,t:'G'},
+'513540':{n:'Correo, Portes y Telegramas',a:120000,m:10000,t:'G'},
+'513555':{n:'Gas Natural',a:4625000,m:385417,t:'G'},
+'514005':{n:'Notariales',a:300000,m:25000,t:'G'},
+'51451501':{n:'Mto Equipo de Presión',a:30780000,m:2565000,t:'G'},
+'51451502':{n:'Mto Ascensores',a:70160000,m:5846667,t:'G'},
+'51451503':{n:'Lavado de Tanque',a:3600000,m:300000,t:'G'},
+'51451504':{n:'Mto Planta Eléctrica',a:9700000,m:808333,t:'G'},
+'51451505':{n:'Brazos Hidráulicos',a:13610000,m:1134167,t:'G'},
+'51451506':{n:'Sistema de Detección',a:923000,m:76917,t:'G'},
+'51451507':{n:'Certificación Ascensores',a:3162000,m:263500,t:'G'},
+'51451508':{n:'Mto CCTV',a:2856000,m:238000,t:'G'},
+'51451509':{n:'Mantenimiento Extintores',a:3168000,m:264000,t:'G'},
+'51451510':{n:'Mto Cajas Residuales',a:16851000,m:1404250,t:'G'},
+'51451512':{n:'Mto Software Contable',a:912000,m:76000,t:'G'},
+'51451513':{n:'Licencias Software',a:0,m:0,t:'G'},
+'51451514':{n:'Mto Cubiertas',a:5000000,m:416667,t:'G'},
+'51451515':{n:'Otros Proyectos',a:0,m:0,t:'G'},
+'51451517':{n:'Mto Alarmas',a:0,m:0,t:'G'},
+'51451518':{n:'Fumigaciones',a:5680000,m:473333,t:'G'},
+'51451519':{n:'Mantto Fogata y BBQ',a:16500000,m:1375000,t:'G'},
+'51451520':{n:'Mantto Parqueadero',a:10984000,m:915333,t:'G'},
+'514520':{n:'Equipo de Oficina',a:0,m:0,t:'G'},
+'514525':{n:'Equipo Computación y Comunicación',a:1181000,m:98417,t:'G'},
+'51500501':{n:'Bombillería',a:6272000,m:522667,t:'G'},
+'515010':{n:'Jardinería',a:6200000,m:516667,t:'G'},
+'515015':{n:'Reparaciones Locativas',a:7200000,m:600000,t:'G'},
+'51952501':{n:'Insumos de Aseo',a:876000,m:73000,t:'G'},
+'51952502':{n:'Cafetería',a:2028000,m:169000,t:'G'},
+'519530':{n:'Útiles, Papelería y Fotocopias',a:2400000,m:200000,t:'G'},
+'519545':{n:'Taxis y Buses',a:1296000,m:108000,t:'G'},
+'51959504':{n:'Gastos Asamblea',a:26544000,m:2212000,t:'G'},
+'51959506':{n:'Celebraciones',a:8868000,m:739000,t:'G'},
+'51959507':{n:'Plan de Emergencias',a:14004000,m:1167000,t:'G'},
+'51959508':{n:'Decoración Navideña',a:3600000,m:300000,t:'G'},
+'519905':{n:'Fondo de Imprevistos',a:18756000,m:1563000,t:'G'},
+'530505':{n:'Gastos Bancarios',a:0,m:0,t:'G'},
+'530520':{n:'Intereses',a:0,m:0,t:'G'},
+'531515':{n:'Costos Ejercicios Anteriores',a:0,m:0,t:'G'},
+'531520':{n:'Impuestos Asumidos',a:0,m:0,t:'G'},
+'539520':{n:'Multas, Sanciones y Litigios',a:0,m:0,t:'G'},
+'539582':{n:'Ajuste al Peso',a:0,m:0,t:'G'}
 };
 
-/* Conjunto de códigos válidos y sus prefijos para filtrar */
-const VALID_CODES = new Set(Object.keys(B));
-const VALID_PREFIXES = new Set();
-Object.keys(B).forEach(c => {
-  for(let i=1;i<=c.length;i++) VALID_PREFIXES.add(c.substring(0,i));
-});
-/* También aceptar códigos padre conocidos del PUC */
-['4','41','417','4170','417010','5','51','53','511','5110','511030',
- '513','5130','5135','513505','5140','514095','51409501',
- '5145','514515','5150','515005','5195','519525','519595',
- '51959503','51959509','5199','5315','5395',
- '51350504','51451521','51451522'].forEach(c => VALID_CODES.add(c));
+const TOTALS={ingAnual:1875578000,gasAnual:2196455000};
 
-function isRelevantCode(code){
-  if(code.length < 6) return false; /* ignorar códigos cortos como apartamentos */
-  if(VALID_CODES.has(code)) return true;
-  /* Verificar si este código es sub-cuenta de algo en el presupuesto */
-  for(const bc of Object.keys(B)){
-    if(code.startsWith(bc) || bc.startsWith(code)) return true;
-  }
-  return false;
-}
-
-const TOTALS = {ingAnual:1875578000,ingMes:171917333,gasAnual:2196455000,gasMes:191929583};
-
-const CAT_GASTOS = {
-  'Honorarios':['511010','511011','511022','511024','51103001'],
-  'Seguros':['513060'],
-  'Servicios':['51350501','51350502','513525','513530','513535','513540','513555'],
-  'Gastos Legales':['514005'],
-  'Mantenimiento':['51451501','51451502','51451503','51451504','51451505','51451506','51451507','51451508','51451509','51451510','51451512','51451513','51451514','51451515','51451517','51451518','51451519','51451520','514520','514525'],
-  'Adecuación':['51500501','515010','515015'],
-  'Diversos':['51952501','51952502','519530','519545','51959504','51959506','51959507','51959508'],
-  'Provisiones':['519905'],
-  'Financieros':['530505','530520'],
-  'Extraordinarios':['531515','531520','539520','539582']
+const CAT_GASTOS={
+'Honorarios':['511010','511011','511022','511024','51103001'],
+'Seguros':['513060'],
+'Servicios':['51350501','51350502','513525','513530','513535','513540','513555'],
+'Gastos Legales':['514005'],
+'Mantenimiento':['51451501','51451502','51451503','51451504','51451505','51451506','51451507','51451508','51451509','51451510','51451512','51451513','51451514','51451515','51451517','51451518','51451519','51451520','514520','514525'],
+'Adecuación':['51500501','515010','515015'],
+'Diversos':['51952501','51952502','519530','519545','51959504','51959506','51959507','51959508'],
+'Provisiones':['519905'],
+'Financieros':['530505','530520'],
+'Extraordinarios':['531515','531520','539520','539582']
 };
+const CAT_TOT_ANUAL={'Honorarios':137463000,'Seguros':146872000,'Servicios':1380927000,'Gastos Legales':300000,'Mantenimiento':426649000,'Adecuación':25872000,'Diversos':59616000,'Provisiones':18756000,'Financieros':0,'Extraordinarios':0};
 
-const CAT_TOT_ANUAL = {
-  'Honorarios':137463000,'Seguros':146872000,'Servicios':1380927000,'Gastos Legales':300000,
-  'Mantenimiento':426649000,'Adecuación':25872000,'Diversos':59616000,'Provisiones':18756000,
-  'Financieros':0,'Extraordinarios':0
-};
-
-/* ======================================================
-   FIREBASE REST API
-   ====================================================== */
-async function fbGet(path){
-  try{const r=await fetch(DB_URL+'/'+path+'.json');if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}catch(e){console.error('fbGet:',e);return null;}
-}
-async function fbSet(path,data){
-  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}catch(e){console.error('fbSet:',e);return false;}
-}
-async function fbDelete(path){
-  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});return r.ok;}catch(e){return false;}
-}
+/* ============ FIREBASE REST ============ */
+async function fbGet(p){try{const r=await fetch(DB_URL+'/'+p+'.json');return r.ok?await r.json():null;}catch(e){return null;}}
+async function fbSet(p,d){try{const r=await fetch(DB_URL+'/'+p+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});return r.ok;}catch(e){return false;}}
+async function fbDel(p){try{const r=await fetch(DB_URL+'/'+p+'.json',{method:'DELETE'});return r.ok;}catch(e){return false;}}
 
 async function loadAllMonths(){
   const bar=document.getElementById('statusBar');
@@ -302,31 +248,29 @@ async function loadAllMonths(){
   refreshUI();
 }
 
-async function saveMonthToCloud(monthNum,accounts){
+async function saveMonth(m,accs){
   const bar=document.getElementById('statusBar');
-  bar.className='status-bar loading-bar';bar.textContent='Guardando en la nube...';
-  const ok=await fbSet('months/'+monthNum,{month:monthNum,accounts:accounts,uploadedAt:Date.now()});
-  if(ok){monthsData[monthNum]={month:monthNum,accounts:accounts};bar.className='status-bar online';bar.textContent='Guardado exitosamente';selectedMonth=monthNum;refreshUI();}
+  bar.className='status-bar loading-bar';bar.textContent='Guardando...';
+  const ok=await fbSet('months/'+m,{month:m,accounts:accs,ts:Date.now()});
+  if(ok){monthsData[m]={month:m,accounts:accs};bar.className='status-bar online';bar.textContent='Guardado en la nube';selectedMonth=m;refreshUI();}
   else{bar.className='status-bar offline';bar.textContent='Error al guardar';}
 }
 
-async function deleteMonthFromCloud(monthNum){
-  if(!confirm('¿Eliminar datos de '+MESES[monthNum]+'?'))return;
-  await fbDelete('months/'+monthNum);delete monthsData[monthNum];
-  const keys=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
-  selectedMonth=keys.length?keys[keys.length-1]:null;refreshUI();
+async function deleteMonth(m){
+  if(!confirm('¿Eliminar '+MESES[m]+'?'))return;
+  await fbDel('months/'+m);delete monthsData[m];
+  const ks=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  selectedMonth=ks.length?ks[ks.length-1]:null;refreshUI();
 }
 
-/* ======================================================
-   ROLES
-   ====================================================== */
+/* ============ ROLES ============ */
 function selectRole(r){
   if(r==='admin'){document.getElementById('pwdSection').style.display='block';document.querySelectorAll('.role-btn').forEach((b,i)=>b.classList.toggle('active',i===1));}
   else{role='viewer';document.getElementById('modalBg').classList.remove('active');startApp();}
 }
 function doLogin(){
   if(document.getElementById('pwdInput').value===ADMIN_PWD){role='admin';document.getElementById('modalBg').classList.remove('active');startApp();}
-  else{document.getElementById('pwdErr').style.display='block';}
+  else document.getElementById('pwdErr').style.display='block';
 }
 function startApp(){
   document.getElementById('mainApp').style.display='block';
@@ -334,24 +278,12 @@ function startApp(){
   loadAllMonths();
 }
 
-/* ======================================================
-   PARSER DE NÚMEROS - formato US: 121,579,000.00
-   ====================================================== */
-function parseNum(str){
-  /* Quita espacios, quita comas (miles), deja el punto (decimal) */
-  const cleaned = str.replace(/\s/g,'').replace(/,/g,'');
-  const n = parseFloat(cleaned);
-  return isNaN(n) ? null : n;
-}
-
-/* ======================================================
-   PDF PARSING
-   ====================================================== */
+/* ============ PDF PARSING ============ */
 async function handleFile(file){
   if(!file)return;
-  const status=document.getElementById('uploadStatus');
-  status.style.display='block';
-  status.innerHTML='<div class="loading-spinner">Procesando PDF...</div>';
+  const st=document.getElementById('uploadStatus');
+  st.style.display='block';
+  st.innerHTML='<div class="loading-spinner">Procesando PDF...</div>';
 
   try{
     const buf=await file.arrayBuffer();
@@ -369,418 +301,274 @@ async function handleFile(file){
     const accounts=extractAccounts(items);
     const count=Object.keys(accounts).length;
 
-    console.log('Mes detectado:',month,'Cuentas:',count);
-    console.log('Cuentas encontradas:',JSON.stringify(accounts,null,2));
+    console.log('Mes:',month,'Cuentas encontradas:',count);
+    console.log('Detalle:',JSON.stringify(accounts,null,2));
 
-    if(!month){status.innerHTML='<p style="color:var(--red);font-weight:600">No se detectó el mes. Verifica el PDF.</p>';return;}
-    if(count===0){status.innerHTML='<p style="color:var(--red);font-weight:600">No se encontraron cuentas válidas (0 cuentas). Revisa la consola (F12) para diagnóstico.</p>';return;}
+    if(!month){st.innerHTML='<p style="color:var(--red);font-weight:600">No se detectó el mes del balance.</p>';return;}
+    if(count===0){st.innerHTML='<p style="color:var(--red);font-weight:600">No se encontraron cuentas (0). Abre consola F12 para ver el diagnóstico.</p>';return;}
 
-    status.innerHTML='<div class="loading-spinner">Guardando en la nube...</div>';
-    await saveMonthToCloud(month,accounts);
-    status.innerHTML='<p style="color:var(--grn);font-weight:600">✓ '+MESES[month]+' cargado — '+count+' cuentas procesadas</p>';
-
+    st.innerHTML='<div class="loading-spinner">Guardando en la nube...</div>';
+    await saveMonth(month,accounts);
+    st.innerHTML='<p style="color:var(--grn);font-weight:600">✓ '+MESES[month]+' cargado — '+count+' cuentas</p>';
   }catch(e){
-    status.innerHTML='<p style="color:var(--red)">Error: '+e.message+'</p>';
+    st.innerHTML='<p style="color:var(--red)">Error: '+e.message+'</p>';
     console.error(e);
   }
 }
 
 function detectMonth(items){
-  const allText=items.map(i=>i.t).join(' ');
-  /* "Periodo: Enero a Febrero" → tomar el segundo mes */
-  const mp=allText.match(/Periodo\s*:?\s*(\w+)\s+a\s+(\w+)/i);
-  if(mp){
-    const m2=mp[2].toLowerCase().substring(0,3);
-    if(MESES_SHORT[m2])return MESES_SHORT[m2];
-  }
-  /* "Saldo Mar/26" */
-  for(let i=12;i>=1;i--){
-    const re=new RegExp('Saldo\\s+'+MESES[i].substring(0,3),'i');
-    if(re.test(allText))return i;
-  }
-  /* Nombre del mes en texto */
-  for(let i=12;i>=1;i--){
-    const re=new RegExp('\\b'+MESES[i]+'\\b','i');
-    if(re.test(allText))return i;
-  }
+  const txt=items.map(i=>i.t).join(' ');
+  const mp=txt.match(/Periodo\s*:?\s*(\w+)\s+a\s+(\w+)/i);
+  if(mp){const m=mp[2].toLowerCase().substring(0,3);if(MESES_SHORT[m])return MESES_SHORT[m];}
+  for(let i=12;i>=1;i--){if(new RegExp('Saldo\\s+'+MESES[i].substring(0,3),'i').test(txt))return i;}
+  for(let i=12;i>=1;i--){if(new RegExp('\\b'+MESES[i]+'\\b','i').test(txt))return i;}
   return null;
 }
 
 function extractAccounts(items){
-  /* 1. Agrupar items por Y (tolerancia 4px) → filas */
+  /* Agrupar por Y con tolerancia 4px */
   const sorted=[...items].sort((a,b)=>b.y-a.y||a.x-b.x);
   const rows=[];
-  let curY=null, curRow=[];
+  let curY=null,curRow=[];
   sorted.forEach(it=>{
     if(curY===null||Math.abs(it.y-curY)>4){
       if(curRow.length)rows.push({y:curY,items:[...curRow]});
       curY=it.y;curRow=[it];
-    }else{curRow.push(it);}
+    }else curRow.push(it);
   });
   if(curRow.length)rows.push({y:curY,items:[...curRow]});
 
   const accounts={};
   const codeRe=/^[1-9]\d{3,7}$/;
+  const bKeys=Object.keys(B);
+
+  console.log('Total filas agrupadas:',rows.length);
 
   for(let ri=0;ri<rows.length;ri++){
     const txts=rows[ri].items.sort((a,b)=>a.x-b.x);
-    const first=txts[0].t.replace(/\s/g,'');
+    const rawFirst=txts[0].t.replace(/\s/g,'');
 
-    if(!codeRe.test(first))continue;
-    if(!isRelevantCode(first))continue;
+    if(!codeRe.test(rawFirst))continue;
 
-    const code=first;
+    /* Filtro: solo códigos relacionados con el presupuesto */
+    let relevant=false;
+    if(B[rawFirst]){relevant=true;}
+    else{
+      for(let k=0;k<bKeys.length;k++){
+        if(rawFirst.startsWith(bKeys[k])||bKeys[k].startsWith(rawFirst)){relevant=true;break;}
+      }
+    }
+    if(!relevant)continue;
 
-    /* Recoger TODOS los números de esta fila */
+    const code=rawFirst;
+
+    /* Recoger números: quitar comas, parsear */
     let nums=[];
-    txts.forEach(it=>{
-      const n=parseNum(it.t);
-      if(n!==null && it.t.replace(/\s/g,'')!==code && it.t.indexOf('.')!==-1) nums.push(n);
-    });
+    for(let ti=0;ti<txts.length;ti++){
+      const raw=txts[ti].t.replace(/\s/g,'');
+      if(raw===code)continue;
+      const cleaned=raw.replace(/,/g,'');
+      const n=parseFloat(cleaned);
+      if(!isNaN(n)&&n>0)nums.push(n);
+    }
 
-    /* Lookahead: si no hay números, revisar 1-2 filas siguientes */
+    /* Lookahead: si no hay números, revisar filas siguientes */
     if(nums.length<1){
       for(let la=1;la<=2&&ri+la<rows.length;la++){
-        const nextRow=rows[ri+la];
-        const nf=nextRow.items[0].t.replace(/\s/g,'');
+        const nRow=rows[ri+la];
+        const nf=nRow.items[0].t.replace(/\s/g,'');
         if(codeRe.test(nf))break;
-        nextRow.items.forEach(it=>{
-          const n=parseNum(it.t);
-          if(n!==null && it.t.indexOf('.')!==-1) nums.push(n);
+        nRow.items.forEach(it=>{
+          const cleaned=it.t.replace(/\s/g,'').replace(/,/g,'');
+          const n=parseFloat(cleaned);
+          if(!isNaN(n)&&n>0)nums.push(n);
         });
         if(nums.length>=1)break;
       }
     }
 
-    /* Nombre de la cuenta */
+    /* Nombre */
     let name='';
     for(let i=1;i<txts.length;i++){
       const t=txts[i].t;
-      if(parseNum(t)===null && t!==code){name=t;break;}
+      const cleaned=t.replace(/,/g,'');
+      if(isNaN(parseFloat(cleaned))){name=t;break;}
     }
 
-    /* CLAVE: tomar el ÚLTIMO número como saldo acumulado */
+    /* ÚLTIMO número = saldo acumulado ejecutado */
     if(nums.length>=1){
-      const saldo=nums[nums.length-1];
       accounts[code]={
         name:name||(B[code]?B[code].n:code),
-        saldo:saldo
+        saldo:nums[nums.length-1]
       };
+      console.log('  '+code+' '+name+' → saldo='+nums[nums.length-1]+' (de '+nums.length+' nums)');
     }
   }
+
   return accounts;
 }
 
-/* ======================================================
-   BUSCAR SALDO: exacto o sumar sub-cuentas
-   ====================================================== */
-function findSaldo(accounts,code){
-  if(accounts[code])return accounts[code].saldo||0;
-  let sum=0,found=false;
-  Object.keys(accounts).forEach(k=>{
-    if(k.startsWith(code)&&k!==code){sum+=accounts[k].saldo||0;found=true;}
-  });
-  return found?sum:0;
+/* ============ BUSCAR SALDO ============ */
+function findSaldo(accs,code){
+  if(accs[code])return accs[code].saldo||0;
+  let sum=0;
+  Object.keys(accs).forEach(k=>{if(k.startsWith(code)&&k!==code)sum+=accs[k].saldo||0;});
+  return sum;
 }
 
-/* ======================================================
-   UI REFRESH
-   ====================================================== */
+/* ============ UI ============ */
 function refreshUI(){
-  const monthNums=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  const mns=Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  if(!mns.length){['monthsCard','kpiSection','tblCard','chartCard','accumCard'].forEach(id=>document.getElementById(id).style.display='none');return;}
 
-  if(monthNums.length===0){
-    ['monthsCard','kpiSection','tblCard','chartCard','accumCard'].forEach(id=>document.getElementById(id).style.display='none');
-    return;
-  }
-
-  /* Month pills */
   document.getElementById('monthsCard').style.display='block';
-  const pillsDiv=document.getElementById('monthPills');
-  pillsDiv.innerHTML='';
-  monthNums.forEach(m=>{
-    const pill=document.createElement('span');
-    pill.className='pill'+(selectedMonth==m?' active':'');
-    pill.innerHTML=MESES[m]+(role==='admin'?'<span class="del" onclick="event.stopPropagation();deleteMonthFromCloud('+m+')">&times;</span>':'');
-    pill.onclick=()=>{selectedMonth=m;refreshUI();};
-    pillsDiv.appendChild(pill);
+  const pd=document.getElementById('monthPills');pd.innerHTML='';
+  mns.forEach(m=>{
+    const p=document.createElement('span');
+    p.className='pill'+(selectedMonth==m?' active':'');
+    p.innerHTML=MESES[m]+(role==='admin'?'<span class="del" onclick="event.stopPropagation();deleteMonth('+m+')">&times;</span>':'');
+    p.onclick=()=>{selectedMonth=m;refreshUI();};
+    pd.appendChild(p);
   });
 
-  if(!selectedMonth||!monthsData[selectedMonth])selectedMonth=monthNums[monthNums.length-1];
+  if(!selectedMonth||!monthsData[selectedMonth])selectedMonth=mns[mns.length-1];
+  document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active',p.textContent.replace('×','').trim()===MESES[selectedMonth]));
 
-  document.querySelectorAll('.pill').forEach(p=>{
-    const txt=p.textContent.replace('×','').trim();
-    p.classList.toggle('active',txt===MESES[selectedMonth]);
-  });
-
-  const mData=monthsData[selectedMonth];
-  if(!mData||!mData.accounts)return;
-
-  buildReport(mData.accounts,selectedMonth,monthNums);
+  const md=monthsData[selectedMonth];
+  if(!md||!md.accounts)return;
+  buildReport(md.accounts,selectedMonth,mns);
 }
 
-/* ======================================================
-   BUILD REPORT
-   El saldo de cada mes YA es acumulado (el Balance de SISCO
-   acumula automáticamente). Usamos directamente el saldo
-   del mes seleccionado.
-   ====================================================== */
-function buildReport(accounts,monthNum,allMonths){
+function buildReport(accs,mn,allM){
   const fmt=n=>n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});
   const pct=(v,t)=>t>0?(v/t*100).toFixed(2):'0.00';
 
-  /* INGRESOS */
+  /* Ingresos */
   const ingCodes=Object.keys(B).filter(c=>B[c].t==='I');
-  let totalIngEjec=0;
-  let ingRows=[];
-
+  let totIng=0;const ingR=[];
   ingCodes.forEach(code=>{
-    const bp=B[code];
-    const ejec=findSaldo(accounts,code);
-    totalIngEjec+=ejec;
-    const pEjec=pct(ejec,bp.a);
-    const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-    const sem=parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
-    ingRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec,pEjec,pRest,sem,isTotal:false});
+    const bp=B[code],ej=findSaldo(accs,code);totIng+=ej;
+    const pe=pct(ej,bp.a),pr=bp.a>0?(100-parseFloat(pe)).toFixed(2):'0.00';
+    ingR.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec:ej,pEjec:pe,pRest:pr,sem:parseFloat(pe)>70?'r':parseFloat(pe)>50?'y':'g',isTotal:false});
   });
 
-  /* GASTOS por categoría */
-  let gasRows=[];
-  let totalGasEjec=0;
-  const catExec={};
-
+  /* Gastos */
+  let gasR=[],totGas=0;const catExec={};
   Object.entries(CAT_GASTOS).forEach(([cat,codes])=>{
-    let catTotal=0;
-    let catAnual=CAT_TOT_ANUAL[cat]||0;
-    let catRows=[];
-
+    let ct=0;const ca=CAT_TOT_ANUAL[cat]||0;const cr=[];
     codes.forEach(code=>{
       const bp=B[code];if(!bp)return;
-      const ejec=findSaldo(accounts,code);
-      catTotal+=ejec;
-      totalGasEjec+=ejec;
-      const pEjec=pct(ejec,bp.a);
-      const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-      const sem=parseFloat(pEjec)>70?'r':parseFloat(pEjec)>50?'y':'g';
-      catRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec,pEjec,pRest,sem,isTotal:false});
+      const ej=findSaldo(accs,code);ct+=ej;totGas+=ej;
+      const pe=pct(ej,bp.a),pr=bp.a>0?(100-parseFloat(pe)).toFixed(2):'0.00';
+      cr.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec:ej,pEjec:pe,pRest:pr,sem:parseFloat(pe)>70?'r':parseFloat(pe)>50?'y':'g',isTotal:false});
     });
-
-    catExec[cat]=catTotal;
-    const cpEjec=pct(catTotal,catAnual);
-    const cpRest=catAnual>0?(100-parseFloat(cpEjec)).toFixed(2):'0.00';
-    const csem=parseFloat(cpEjec)>70?'r':parseFloat(cpEjec)>50?'y':'g';
-
-    gasRows.push({code:'',name:'▸ '+cat,anual:catAnual,mes:Math.round(catAnual/12),ejec:catTotal,pEjec:cpEjec,pRest:cpRest,sem:csem,isTotal:true});
-    gasRows=gasRows.concat(catRows);
+    catExec[cat]=ct;
+    const cpe=pct(ct,ca),cpr=ca>0?(100-parseFloat(cpe)).toFixed(2):'0.00';
+    gasR.push({code:'',name:'▸ '+cat,anual:ca,mes:Math.round(ca/12),ejec:ct,pEjec:cpe,pRest:cpr,sem:parseFloat(cpe)>70?'r':parseFloat(cpe)>50?'y':'g',isTotal:true});
+    gasR=gasR.concat(cr);
   });
 
   /* KPIs */
   document.getElementById('kpiSection').style.display='block';
-  const excedente=totalIngEjec-totalGasEjec;
+  const exc=totIng-totGas;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi"><div class="val">$${fmt(totalIngEjec)}</div><div class="lbl">Ingresos Ejecutados (Acum. ${MESES[monthNum]})</div></div>
-    <div class="kpi"><div class="val">$${fmt(totalGasEjec)}</div><div class="lbl">Gastos Ejecutados (Acum. ${MESES[monthNum]})</div></div>
-    <div class="kpi"><div class="val" style="color:${excedente>=0?'var(--grn)':'var(--red)'}">$${fmt(excedente)}</div><div class="lbl">Excedente / Déficit</div></div>
-    <div class="kpi"><div class="val">${pct(totalGasEjec,TOTALS.gasAnual)}%</div><div class="lbl">% Presupuesto Gastado</div></div>
-  `;
+    <div class="kpi"><div class="val">$${fmt(totIng)}</div><div class="lbl">Ingresos Ejecutados (${MESES[mn]})</div></div>
+    <div class="kpi"><div class="val">$${fmt(totGas)}</div><div class="lbl">Gastos Ejecutados (${MESES[mn]})</div></div>
+    <div class="kpi"><div class="val" style="color:${exc>=0?'var(--grn)':'var(--red)'}">$${fmt(exc)}</div><div class="lbl">Excedente / Déficit</div></div>
+    <div class="kpi"><div class="val">${pct(totGas,TOTALS.gasAnual)}%</div><div class="lbl">% Presupuesto Gastado</div></div>`;
 
   /* Tablas */
   document.getElementById('tblCard').style.display='block';
-  renderTable('tblIng',ingRows);
-  renderTable('tblGas',gasRows);
+  mkTbl('tblIng',ingR);mkTbl('tblGas',gasR);
 
-  /* Resumen */
-  const tblRes=document.getElementById('tblRes');
-  const piNG=pct(totalIngEjec,TOTALS.ingAnual);
-  const piGS=pct(totalGasEjec,TOTALS.gasAnual);
-  tblRes.innerHTML=`<thead><tr><th>Concepto</th><th>Ppto Anual</th><th>Ejecutado Acum.</th><th>% Ejec.</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>
-    <tr class="tot-row"><td>Total Ingresos</td><td>$${fmt(TOTALS.ingAnual)}</td><td>$${fmt(totalIngEjec)}</td><td>${piNG}%</td><td>${(100-parseFloat(piNG)).toFixed(2)}%</td><td>$${fmt(TOTALS.ingAnual-totalIngEjec)}</td><td><span class="sem sem-${parseFloat(piNG)>70?'r':parseFloat(piNG)>50?'y':'g'}"></span></td></tr>
-    <tr class="tot-row"><td>Total Gastos</td><td>$${fmt(TOTALS.gasAnual)}</td><td>$${fmt(totalGasEjec)}</td><td>${piGS}%</td><td>${(100-parseFloat(piGS)).toFixed(2)}%</td><td>$${fmt(TOTALS.gasAnual-totalGasEjec)}</td><td><span class="sem sem-${parseFloat(piGS)>70?'r':parseFloat(piGS)>50?'y':'g'}"></span></td></tr>
-    <tr class="tot-row" style="background:#${excedente>=0?'f5e6ec':'fde8e8'} !important"><td>Excedente/Déficit</td><td>$${fmt(TOTALS.ingAnual-TOTALS.gasAnual)}</td><td>$${fmt(excedente)}</td><td colspan="4" style="text-align:center;font-size:1.1em;color:${excedente>=0?'var(--grn)':'var(--red)'}">${excedente>=0?'SUPERÁVIT':'DÉFICIT'}</td></tr>
-  </tbody>`;
+  const tr=document.getElementById('tblRes');
+  const pi=pct(totIng,TOTALS.ingAnual),pg=pct(totGas,TOTALS.gasAnual);
+  tr.innerHTML=`<thead><tr><th>Concepto</th><th>Ppto Anual</th><th>Ejecutado</th><th>% Ejec.</th><th>% Rest.</th><th>Saldo</th><th>Sem.</th></tr></thead><tbody>
+    <tr class="tot-row"><td>Total Ingresos</td><td>$${fmt(TOTALS.ingAnual)}</td><td>$${fmt(totIng)}</td><td>${pi}%</td><td>${(100-parseFloat(pi)).toFixed(2)}%</td><td>$${fmt(TOTALS.ingAnual-totIng)}</td><td><span class="sem sem-${parseFloat(pi)>70?'r':parseFloat(pi)>50?'y':'g'}"></span></td></tr>
+    <tr class="tot-row"><td>Total Gastos</td><td>$${fmt(TOTALS.gasAnual)}</td><td>$${fmt(totGas)}</td><td>${pg}%</td><td>${(100-parseFloat(pg)).toFixed(2)}%</td><td>$${fmt(TOTALS.gasAnual-totGas)}</td><td><span class="sem sem-${parseFloat(pg)>70?'r':parseFloat(pg)>50?'y':'g'}"></span></td></tr>
+    <tr class="tot-row" style="background:#${exc>=0?'f5e6ec':'fde8e8'} !important"><td>Excedente/Déficit</td><td>$${fmt(TOTALS.ingAnual-TOTALS.gasAnual)}</td><td>$${fmt(exc)}</td><td colspan="4" style="text-align:center;font-size:1.1em;color:${exc>=0?'var(--grn)':'var(--red)'}">${exc>=0?'SUPERÁVIT':'DÉFICIT'}</td></tr></tbody>`;
 
-  /* Charts */
   document.getElementById('chartCard').style.display='block';
-  drawRadar(catExec);
-  drawPie(catExec);
-
-  if(allMonths.length>0){
-    document.getElementById('accumCard').style.display='block';
-    drawBar(allMonths);
-  }
+  drawRadar(catExec);drawPie(catExec);
+  if(allM.length>0){document.getElementById('accumCard').style.display='block';drawBar(allM);}
 }
 
-function renderTable(id,rows){
-  const tbl=document.getElementById(id);
-  let html='<thead><tr><th>Cuenta</th><th>Descripción</th><th>Ppto Anual</th><th>Ppto Mes</th><th>Ejecutado Acum.</th><th>% Ejec. Anual</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>';
+function mkTbl(id,rows){
+  const t=document.getElementById(id);
+  let h='<thead><tr><th>Cuenta</th><th>Descripción</th><th>Ppto Anual</th><th>Ppto Mes</th><th>Ejecutado</th><th>% Ejec.</th><th>% Rest.</th><th>Saldo</th><th>Sem.</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    const cls=r.isTotal?'class="tot-row"':'';
-    const saldo=r.anual-r.ejec;
-    html+=`<tr ${cls}><td>${r.code}</td><td>${r.name}</td><td>$${fmt2(r.anual)}</td><td>$${fmt2(r.mes)}</td><td>$${fmt2(r.ejec)}</td><td>${r.pEjec}%</td><td>${r.pRest}%</td><td style="color:${saldo>=0?'var(--grn)':'var(--red)'}">$${fmt2(saldo)}</td><td><span class="sem sem-${r.sem}"></span></td></tr>`;
+    const s=r.anual-r.ejec;
+    h+=`<tr ${r.isTotal?'class="tot-row"':''}><td>${r.code}</td><td>${r.name}</td><td>$${fmt2(r.anual)}</td><td>$${fmt2(r.mes)}</td><td>$${fmt2(r.ejec)}</td><td>${r.pEjec}%</td><td>${r.pRest}%</td><td style="color:${s>=0?'var(--grn)':'var(--red)'}">$${fmt2(s)}</td><td><span class="sem sem-${r.sem}"></span></td></tr>`;
   });
-  html+='</tbody>';tbl.innerHTML=html;
+  t.innerHTML=h+'</tbody>';
 }
-
 function fmt2(n){return n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
-/* ======================================================
-   CHARTS - colores vinotinto
-   ====================================================== */
+/* ============ CHARTS ============ */
 function drawRadar(catExec){
-  const canvas=document.getElementById('radarChart');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=Math.min(W,H)/2-60;
+  const c=document.getElementById('radarChart'),ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=Math.min(W,H)/2-60;
   ctx.clearRect(0,0,W,H);
-
-  const cats=Object.keys(CAT_TOT_ANUAL).filter(c=>CAT_TOT_ANUAL[c]>0);
-  const n=cats.length;if(n<3)return;
-  const angle=i=>(Math.PI*2*i/n)-Math.PI/2;
-
-  [0.25,0.5,0.7,1].forEach(level=>{
-    ctx.beginPath();
-    for(let i=0;i<=n;i++){const a=angle(i%n),x=cx+Math.cos(a)*R*level,y=cy+Math.sin(a)*R*level;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-    ctx.closePath();
-    if(level===0.7){ctx.strokeStyle='#e74c3c';ctx.lineWidth=2;ctx.setLineDash([5,5]);}
-    else{ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.setLineDash([]);}
+  const cats=Object.keys(CAT_TOT_ANUAL).filter(c=>CAT_TOT_ANUAL[c]>0),n=cats.length;if(n<3)return;
+  const ang=i=>(Math.PI*2*i/n)-Math.PI/2;
+  [.25,.5,.7,1].forEach(lv=>{
+    ctx.beginPath();for(let i=0;i<=n;i++){const a=ang(i%n),x=cx+Math.cos(a)*R*lv,y=cy+Math.sin(a)*R*lv;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();
+    if(lv===.7){ctx.strokeStyle='#e74c3c';ctx.lineWidth=2;ctx.setLineDash([5,5]);}else{ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.setLineDash([]);}
     ctx.stroke();ctx.setLineDash([]);
   });
-
-  const a70=angle(0);
-  ctx.fillStyle='#e74c3c';ctx.font='bold 11px sans-serif';
-  ctx.fillText('70% ALERTA',cx+Math.cos(a70)*R*0.7+5,cy+Math.sin(a70)*R*0.7-5);
-
-  cats.forEach((cat,i)=>{
-    const a=angle(i);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
-    ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.stroke();
-    const lx=cx+Math.cos(a)*(R+25),ly=cy+Math.sin(a)*(R+25);
-    ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    cat.split(' ').forEach((w,wi)=>ctx.fillText(w,lx,ly+wi*13));
-  });
-
+  ctx.fillStyle='#e74c3c';ctx.font='bold 11px sans-serif';ctx.fillText('70% ALERTA',cx+Math.cos(ang(0))*R*.7+5,cy+Math.sin(ang(0))*R*.7-5);
+  cats.forEach((cat,i)=>{const a=ang(i);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.stroke();
+    const lx=cx+Math.cos(a)*(R+25),ly=cy+Math.sin(a)*(R+25);ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';cat.split(' ').forEach((w,wi)=>ctx.fillText(w,lx,ly+wi*13));});
   ctx.beginPath();
-  cats.forEach((cat,i)=>{
-    const exec=catExec[cat]||0;const total=CAT_TOT_ANUAL[cat];
-    const pctVal=Math.min(exec/total,1.2);const a=angle(i);
-    const x=cx+Math.cos(a)*R*pctVal,y=cy+Math.sin(a)*R*pctVal;
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
-  ctx.closePath();
-  ctx.fillStyle='rgba(123,30,59,0.15)';ctx.fill();
-  ctx.strokeStyle='#7B1E3B';ctx.lineWidth=2.5;ctx.stroke();
-
-  cats.forEach((cat,i)=>{
-    const exec=catExec[cat]||0;const total=CAT_TOT_ANUAL[cat];
-    const pctVal=Math.min(exec/total,1.2);const pctNum=exec/total*100;const a=angle(i);
-    const x=cx+Math.cos(a)*R*pctVal,y=cy+Math.sin(a)*R*pctVal;
-    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
-    ctx.fillStyle=pctNum>70?'#e74c3c':pctNum>50?'#f39c12':'#27ae60';
-    ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle='#333';ctx.font='bold 10px sans-serif';
-    ctx.fillText(pctNum.toFixed(1)+'%',x+8,y-8);
-  });
+  cats.forEach((cat,i)=>{const ex=catExec[cat]||0,tot=CAT_TOT_ANUAL[cat],pv=Math.min(ex/tot,1.2),a=ang(i),x=cx+Math.cos(a)*R*pv,y=cy+Math.sin(a)*R*pv;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.closePath();ctx.fillStyle='rgba(123,30,59,.15)';ctx.fill();ctx.strokeStyle='#7B1E3B';ctx.lineWidth=2.5;ctx.stroke();
+  cats.forEach((cat,i)=>{const ex=catExec[cat]||0,tot=CAT_TOT_ANUAL[cat],pv=Math.min(ex/tot,1.2),pn=ex/tot*100,a=ang(i),x=cx+Math.cos(a)*R*pv,y=cy+Math.sin(a)*R*pv;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=pn>70?'#e74c3c':pn>50?'#f39c12':'#27ae60';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#333';ctx.font='bold 10px sans-serif';ctx.fillText(pn.toFixed(1)+'%',x+8,y-8);});
 }
 
 function drawPie(catExec){
-  const canvas=document.getElementById('pieChart');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
-
-  const colors=['#7B1E3B','#9B3A5A','#C2185B','#E91E63','#f39c12','#e74c3c','#9b59b6','#3498db','#1abc9c','#95a5a6'];
-  const cats=Object.keys(catExec).filter(c=>catExec[c]>0);
-  const total=cats.reduce((s,c)=>s+catExec[c],0);if(total===0)return;
-
-  const cx2=W/2-80,cy2=H/2,R2=Math.min(W,H)/2-40;
-  let startAngle=-Math.PI/2;
-
-  cats.forEach((cat,i)=>{
-    const slice=(catExec[cat]/total)*Math.PI*2;
-    ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.arc(cx2,cy2,R2,startAngle,startAngle+slice);ctx.closePath();
-    ctx.fillStyle=colors[i%colors.length];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    const mid=startAngle+slice/2;const lx=cx2+Math.cos(mid)*(R2*0.65),ly=cy2+Math.sin(mid)*(R2*0.65);
-    if(slice>0.15){ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText((catExec[cat]/total*100).toFixed(1)+'%',lx,ly);}
-    startAngle+=slice;
-  });
-
-  const lx=W-150,ly=30;
-  cats.forEach((cat,i)=>{
-    ctx.fillStyle=colors[i%colors.length];ctx.fillRect(lx,ly+i*22,14,14);
-    ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText(cat,lx+20,ly+i*22+11);
-  });
+  const cv=document.getElementById('pieChart'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const cols=['#7B1E3B','#9B3A5A','#C2185B','#E91E63','#f39c12','#e74c3c','#9b59b6','#3498db','#1abc9c','#95a5a6'];
+  const cats=Object.keys(catExec).filter(c=>catExec[c]>0),tot=cats.reduce((s,c)=>s+catExec[c],0);if(!tot)return;
+  const cx2=W/2-80,cy2=H/2,R2=Math.min(W,H)/2-40;let sa=-Math.PI/2;
+  cats.forEach((cat,i)=>{const sl=(catExec[cat]/tot)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.arc(cx2,cy2,R2,sa,sa+sl);ctx.closePath();ctx.fillStyle=cols[i%cols.length];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    if(sl>.15){const mid=sa+sl/2,lx=cx2+Math.cos(mid)*R2*.65,ly=cy2+Math.sin(mid)*R2*.65;ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText((catExec[cat]/tot*100).toFixed(1)+'%',lx,ly);}sa+=sl;});
+  const lx=W-150,ly=30;cats.forEach((cat,i)=>{ctx.fillStyle=cols[i%cols.length];ctx.fillRect(lx,ly+i*22,14,14);ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText(cat,lx+20,ly+i*22+11);});
 }
 
-function drawBar(allMonths){
-  const canvas=document.getElementById('barChart');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
-  const pad={t:40,b:60,l:100,r:30};
-  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
-
-  /* Para cada mes: calcular ingresos y gastos del saldo de ese mes */
-  const ingData=[],gasData=[];
-  allMonths.forEach(m=>{
-    const accs=monthsData[m]?.accounts||{};
-    let ing=0,gas=0;
-    Object.keys(accs).forEach(code=>{
-      const s=accs[code].saldo||0;
-      if(code.startsWith('4')&&code.length>=8)ing+=s;
-      else if(code.startsWith('5')&&code.length>=6)gas+=s;
-    });
-    ingData.push({m,v:ing});
-    gasData.push({m,v:gas});
-  });
-
-  const maxV=Math.max(...ingData.map(d=>d.v),...gasData.map(d=>d.v),1);
-  const barW=Math.min(40,cw/(allMonths.length*3));
-
+function drawBar(allM){
+  const cv=document.getElementById('barChart'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const pad={t:40,b:60,l:100,r:30},cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const iD=[],gD=[];
+  allM.forEach(m=>{const a=monthsData[m]?.accounts||{};let ig=0,gs=0;
+    Object.keys(a).forEach(c=>{const s=a[c].saldo||0;if(c.startsWith('4')&&(B[c]||c.length>=8))ig+=s;else if(c.startsWith('5')&&(B[c]||c.length>=6))gs+=s;});
+    iD.push({m,v:ig});gD.push({m,v:gs});});
+  const mx=Math.max(...iD.map(d=>d.v),...gD.map(d=>d.v),1),bw=Math.min(40,cw/(allM.length*3));
   ctx.strokeStyle='#eee';ctx.lineWidth=1;
-  for(let i=0;i<=5;i++){
-    const y=pad.t+ch*(1-i/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';ctx.fillText('$'+fmt2(maxV*i/5),pad.l-10,y+4);
-  }
-
-  allMonths.forEach((m,i)=>{
-    const x=pad.l+i*(cw/allMonths.length)+cw/(allMonths.length*2)-barW;
-    const hIng=ingData[i].v/maxV*ch;const hGas=gasData[i].v/maxV*ch;
-    ctx.fillStyle='#7B1E3B';ctx.fillRect(x,pad.t+ch-hIng,barW,hIng);
-    ctx.fillStyle='#e74c3c';ctx.fillRect(x+barW+4,pad.t+ch-hGas,barW,hGas);
-    ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='center';
-    ctx.fillText(MESES[m].substring(0,3),x+barW+2,H-pad.b+20);
-  });
-
-  ctx.fillStyle='#7B1E3B';ctx.fillRect(pad.l,H-25,14,14);
-  ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('Ingresos',pad.l+20,H-14);
-  ctx.fillStyle='#e74c3c';ctx.fillRect(pad.l+100,H-25,14,14);
-  ctx.fillStyle='#333';ctx.fillText('Gastos',pad.l+120,H-14);
+  for(let i=0;i<=5;i++){const y=pad.t+ch*(1-i/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';ctx.fillText('$'+fmt2(mx*i/5),pad.l-10,y+4);}
+  allM.forEach((m,i)=>{const x=pad.l+i*(cw/allM.length)+cw/(allM.length*2)-bw;
+    ctx.fillStyle='#7B1E3B';ctx.fillRect(x,pad.t+ch-iD[i].v/mx*ch,bw,iD[i].v/mx*ch);
+    ctx.fillStyle='#e74c3c';ctx.fillRect(x+bw+4,pad.t+ch-gD[i].v/mx*ch,bw,gD[i].v/mx*ch);
+    ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText(MESES[m].substring(0,3),x+bw+2,H-pad.b+20);});
+  ctx.fillStyle='#7B1E3B';ctx.fillRect(pad.l,H-25,14,14);ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('Ingresos',pad.l+20,H-14);
+  ctx.fillStyle='#e74c3c';ctx.fillRect(pad.l+100,H-25,14,14);ctx.fillStyle='#333';ctx.fillText('Gastos',pad.l+120,H-14);
 }
 
-/* ======================================================
-   CSV EXPORT
-   ====================================================== */
+/* ============ CSV ============ */
 function exportCSV(){
   if(!selectedMonth||!monthsData[selectedMonth])return;
-  const accs=monthsData[selectedMonth].accounts;
-  let csv='Cuenta,Descripción,Ppto Anual,Ppto Mes,Ejecutado Acum,% Ejec Anual,% Restante,Saldo,Semáforo\n';
-  Object.keys(B).forEach(code=>{
-    const bp=B[code];
-    const ejec=findSaldo(accs,code);
-    const pEjec=bp.a>0?(ejec/bp.a*100).toFixed(2):'0.00';
-    const pRest=bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
-    const sem=parseFloat(pEjec)>70?'ROJO':parseFloat(pEjec)>50?'AMARILLO':'VERDE';
-    csv+=`${code},"${bp.n}",${bp.a},${bp.m},${ejec},${pEjec}%,${pRest}%,${bp.a-ejec},${sem}\n`;
-  });
-  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);a.download=`Ejecucion_ElRoble_${MESES[selectedMonth]}_2026.csv`;a.click();
+  const a=monthsData[selectedMonth].accounts;
+  let csv='Cuenta,Descripción,Ppto Anual,Ppto Mes,Ejecutado,% Ejec,% Rest,Saldo,Semáforo\n';
+  Object.keys(B).forEach(c=>{const bp=B[c],ej=findSaldo(a,c),pe=bp.a>0?(ej/bp.a*100).toFixed(2):'0.00',pr=bp.a>0?(100-parseFloat(pe)).toFixed(2):'0.00';
+    csv+=`${c},"${bp.n}",${bp.a},${bp.m},${ej},${pe}%,${pr}%,${bp.a-ej},${parseFloat(pe)>70?'ROJO':parseFloat(pe)>50?'AMARILLO':'VERDE'}\n`;});
+  const bl=new Blob([csv],{type:'text/csv'}),al=document.createElement('a');al.href=URL.createObjectURL(bl);al.download=`Ejecucion_ElRoble_${MESES[selectedMonth]}_2026.csv`;al.click();
 }
 
-/* ======================================================
-   DRAG & DROP
-   ====================================================== */
+/* ============ DRAG & DROP ============ */
 const dz=document.getElementById('dropZone');
-if(dz){
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--pri2)';dz.style.background='var(--pri-light)';});
-  dz.addEventListener('dragleave',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#fdf0f4';});
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--pri)';dz.style.background='#fdf0f4';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
-}
+if(dz){dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='var(--pri-light)';});
+  dz.addEventListener('dragleave',e=>{e.preventDefault();dz.style.background='#fdf0f4';});
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='#fdf0f4';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});}
 </script>
 </body>
 </html>
