@@ -6,9 +6,6 @@
 <title>Ejecución Presupuestal - El Roble PH 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 :root{--pri:#1a5632;--pri2:#2d8a4e;--bg:#f5f7f5;--card:#fff;--txt:#1a1a1a;--txt2:#555;--red:#e74c3c;--yel:#f39c12;--grn:#27ae60;--brd:#ddd}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -57,14 +54,10 @@ canvas{max-width:100%;height:auto}
 .status-bar{padding:10px 20px;text-align:center;font-size:.85em}
 .status-bar.online{background:#e8f5e9;color:var(--grn)}
 .status-bar.offline{background:#fde8e8;color:var(--red)}
-.loading{text-align:center;padding:40px;color:var(--txt2)}
-.loading::after{content:'';display:block;width:40px;height:40px;margin:15px auto;border:4px solid var(--brd);border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite}
+.status-bar.loading-bar{background:#fff3cd;color:#856404}
+.loading-spinner{text-align:center;padding:40px;color:var(--txt2)}
+.loading-spinner::after{content:'';display:block;width:40px;height:40px;margin:15px auto;border:4px solid var(--brd);border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#firebaseSetup{background:#fff3cd;border:2px solid #ffc107;border-radius:12px;padding:20px;margin-bottom:20px}
-#firebaseSetup h3{color:#856404;margin-bottom:10px}
-#firebaseSetup code{background:#f8f0d0;padding:2px 6px;border-radius:4px;font-size:.9em}
-.config-form input{width:100%;padding:10px;border:2px solid var(--brd);border-radius:8px;font-size:.9em;margin-bottom:10px}
-.config-form label{display:block;font-weight:600;margin-bottom:4px;font-size:.85em;color:var(--txt2)}
 @media(max-width:768px){.header h1{font-size:1.2em}.kpi .val{font-size:1.3em}th,td{padding:6px 4px;font-size:.75em}.charts-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -75,7 +68,7 @@ canvas{max-width:100%;height:auto}
   <p>Control de Ejecución Presupuestal 2026</p>
 </div>
 
-<div id="statusBar" class="status-bar offline">Conectando a la base de datos...</div>
+<div id="statusBar" class="status-bar loading-bar">Conectando a la base de datos...</div>
 
 <!-- Modal de acceso -->
 <div id="modalBg" class="modal-bg active">
@@ -84,11 +77,11 @@ canvas{max-width:100%;height:auto}
     <p style="margin-bottom:20px;color:var(--txt2)">Seleccione su modo de acceso</p>
     <div class="role-btns">
       <div class="role-btn" onclick="selectRole('viewer')">
-        <h3>👁 Consulta</h3>
+        <h3>Consulta</h3>
         <p style="font-size:.8em;color:var(--txt2)">Ver reportes</p>
       </div>
       <div class="role-btn" onclick="selectRole('admin')">
-        <h3>🔐 Administrador</h3>
+        <h3>Administrador</h3>
         <p style="font-size:.8em;color:var(--txt2)">Cargar balances</p>
       </div>
     </div>
@@ -96,33 +89,6 @@ canvas{max-width:100%;height:auto}
       <input type="password" id="pwdInput" placeholder="Contraseña de administrador" onkeydown="if(event.key==='Enter')doLogin()">
       <button class="btn btn-pri" onclick="doLogin()" style="width:100%">Ingresar</button>
       <p id="pwdErr" style="color:var(--red);margin-top:10px;display:none">Contraseña incorrecta</p>
-    </div>
-  </div>
-</div>
-
-<!-- Firebase Setup (solo admin, si no está configurado) -->
-<div id="firebaseSetup" class="container" style="display:none">
-  <div class="card">
-    <h2>Configurar Base de Datos Firebase</h2>
-    <p style="margin-bottom:15px">Para que los datos se compartan entre todos los usuarios, necesitas conectar una base de datos Firebase gratuita. Sigue estos pasos:</p>
-    <ol style="margin-left:20px;margin-bottom:20px;line-height:2">
-      <li>Ve a <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a></li>
-      <li>Clic en <strong>"Agregar proyecto"</strong> → nombre: <code>elroble-presupuesto</code> → Crear</li>
-      <li>En el menú lateral: <strong>Compilación → Realtime Database → Crear base de datos</strong></li>
-      <li>Selecciona ubicación (cualquiera) → <strong>"Comenzar en modo de prueba"</strong> → Activar</li>
-      <li>Ve a <strong>Configuración del proyecto</strong> (engranaje) → sección "Tus apps" → clic en <strong>&lt;/&gt;</strong> (Web)</li>
-      <li>Registra la app con nombre "presupuesto" → copia los valores del <code>firebaseConfig</code></li>
-    </ol>
-    <div class="config-form">
-      <label>API Key</label>
-      <input type="text" id="cfgApiKey" placeholder="AIzaSy...">
-      <label>Auth Domain</label>
-      <input type="text" id="cfgAuthDomain" placeholder="elroble-presupuesto.firebaseapp.com">
-      <label>Database URL</label>
-      <input type="text" id="cfgDbUrl" placeholder="https://elroble-presupuesto-default-rtdb.firebaseio.com">
-      <label>Project ID</label>
-      <input type="text" id="cfgProjectId" placeholder="elroble-presupuesto">
-      <button class="btn btn-pri" onclick="saveFirebaseConfig()" style="width:100%;margin-top:10px">Guardar y Conectar</button>
     </div>
   </div>
 </div>
@@ -187,20 +153,23 @@ canvas{max-width:100%;height:auto}
 </div>
 
 <script>
-/* ============ CONFIG ============ */
+/* ======================================================
+   CONFIGURACIÓN - BASE DE DATOS FIREBASE
+   ====================================================== */
+const DB_URL = 'https://elroble-presupuesto-default-rtdb.firebaseio.com';
 const ADMIN_PWD = 'ElRoble2026';
+
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_SHORT = {'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12};
 
 let role = null;
-let db = null;
-let fbConfig = null;
-let monthsData = {}; // {1: {month:1, accounts:{code:{name,debito,credito,saldo},...}}, ...}
+let monthsData = {};
 let selectedMonth = null;
 
-/* ============ PRESUPUESTO 2026 (CON INCREMENTO) ============ */
+/* ======================================================
+   PRESUPUESTO 2026 (PPTO-2026 CON INCREMENTO)
+   ====================================================== */
 const B = {
-  // INGRESOS
   '41701001':{n:'Cuotas de Administración',a:1874298000,m:171810667},
   '41701002':{n:'Intereses por Mora',a:0,m:0},
   '41701003':{n:'Uso Zona Común Parqueaderos',a:0,m:0},
@@ -212,15 +181,12 @@ const B = {
   '41701010':{n:'Uso Zona Común BBQ',a:0,m:0},
   '41701011':{n:'Uso Zona Común Motos',a:0,m:0},
   '41701012':{n:'Uso Zona Común Maq. Dispensadora',a:0,m:0},
-  // GASTOS - Honorarios
   '511010':{n:'Revisoría Fiscal',a:15108000,m:1259000},
   '511011':{n:'Asesoría Jurídica',a:6000000,m:500000},
   '511022':{n:'SG SST',a:3500000,m:291667},
   '511024':{n:'Contabilidad',a:24000000,m:2000000},
   '51103001':{n:'Administrador',a:88855000,m:7404583},
-  // Seguros
   '513060':{n:'Resp. Civil y Extracontractual',a:146872000,m:12239333},
-  // Servicios
   '51350501':{n:'Servicio de Aseo',a:250413000,m:20867750},
   '51350502':{n:'Servicio de Vigilancia',a:982282000,m:81856833},
   '513525':{n:'Acueducto y Alcantarillado',a:9351000,m:779250},
@@ -228,13 +194,11 @@ const B = {
   '513535':{n:'Teléfono e Internet',a:2136000,m:178000},
   '513540':{n:'Correo, Portes y Telegramas',a:120000,m:10000},
   '513555':{n:'Gas Natural',a:4625000,m:385417},
-  // Gastos Legales
   '514005':{n:'Notariales',a:300000,m:25000},
-  // Mantenimiento
   '51451501':{n:'Mto Equipo de Presión',a:30780000,m:2565000},
   '51451502':{n:'Mto Ascensores',a:70160000,m:5846667},
   '51451503':{n:'Lavado de Tanque',a:3600000,m:300000},
-  '51451504':{n:'Mto Planta Eléctrica',a:9700000,m:9700000},
+  '51451504':{n:'Mto Planta Eléctrica',a:9700000,m:808333},
   '51451505':{n:'Brazos Hidráulicos',a:13610000,m:1134167},
   '51451506':{n:'Sistema de Detección',a:923000,m:76917},
   '51451507':{n:'Certificación Ascensores',a:3162000,m:263500},
@@ -251,11 +215,9 @@ const B = {
   '51451520':{n:'Mantto Parqueadero',a:10984000,m:915333},
   '514520':{n:'Equipo de Oficina',a:0,m:0},
   '514525':{n:'Equipo Computación y Comunicación',a:1181000,m:98417},
-  // Adecuación
   '51500501':{n:'Bombillería',a:6272000,m:522667},
   '515010':{n:'Jardinería',a:6200000,m:516667},
   '515015':{n:'Reparaciones Locativas',a:7200000,m:600000},
-  // Diversos
   '51952501':{n:'Insumos de Aseo',a:876000,m:73000},
   '51952502':{n:'Cafetería',a:2028000,m:169000},
   '519530':{n:'Útiles, Papelería y Fotocopias',a:2400000,m:200000},
@@ -264,27 +226,16 @@ const B = {
   '51959506':{n:'Celebraciones',a:8868000,m:739000},
   '51959507':{n:'Plan de Emergencias',a:14004000,m:1167000},
   '51959508':{n:'Decoración Navideña',a:3600000,m:300000},
-  // Provisiones
   '519905':{n:'Fondo de Imprevistos',a:18756000,m:1563000},
-  // Financieros
   '530505':{n:'Gastos Bancarios',a:0,m:0},
   '530520':{n:'Intereses',a:0,m:0},
-  // Extraordinarios
   '531515':{n:'Costos Ejercicios Anteriores',a:0,m:0},
   '531520':{n:'Impuestos Asumidos',a:0,m:0},
-  // Ajuste
   '539520':{n:'Multas, Sanciones y Litigios',a:0,m:0},
-  '539582':{n:'Ajuste al Peso',a:0,m:0},
-  // Zonas Humedas (subcuenta parqueadero)
-  'ZH':{n:'Zonas Húmedas',a:88800000,m:7400000}
+  '539582':{n:'Ajuste al Peso',a:0,m:0}
 };
 
-const TOTALS = {
-  ingAnual: 1875578000,
-  ingMes: 171917333,
-  gasAnual: 2196455000,
-  gasMes: 191929583
-};
+const TOTALS = {ingAnual:1875578000,ingMes:171917333,gasAnual:2196455000,gasMes:191929583};
 
 const CAT_GASTOS = {
   'Honorarios':['511010','511011','511022','511024','51103001'],
@@ -305,57 +256,81 @@ const CAT_TOT_ANUAL = {
   'Financieros':0,'Extraordinarios':0
 };
 
-/* ============ FIREBASE ============ */
-function getStoredConfig(){
-  try{return JSON.parse(localStorage.getItem('elroble_fb_config'))}catch(e){return null}
-}
-function saveFirebaseConfig(){
-  const cfg = {
-    apiKey: document.getElementById('cfgApiKey').value.trim(),
-    authDomain: document.getElementById('cfgAuthDomain').value.trim(),
-    databaseURL: document.getElementById('cfgDbUrl').value.trim(),
-    projectId: document.getElementById('cfgProjectId').value.trim()
-  };
-  if(!cfg.apiKey||!cfg.databaseURL){alert('Por favor completa al menos API Key y Database URL');return;}
-  localStorage.setItem('elroble_fb_config', JSON.stringify(cfg));
-  fbConfig = cfg;
-  initFirebase(cfg);
-  document.getElementById('firebaseSetup').style.display='none';
+/* ======================================================
+   FIREBASE REST API (sin SDK, conexión directa)
+   ====================================================== */
+async function fbGet(path){
+  try {
+    const r = await fetch(DB_URL+'/'+path+'.json');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  } catch(e){console.error('fbGet error:',e);return null;}
 }
 
-function initFirebase(cfg){
-  try{
-    if(!firebase.apps.length) firebase.initializeApp(cfg);
-    db = firebase.database();
-    const connRef = db.ref('.info/connected');
-    connRef.on('value', snap=>{
-      const bar = document.getElementById('statusBar');
-      if(snap.val()===true){bar.className='status-bar online';bar.textContent='Conectado a la base de datos en la nube';}
-      else{bar.className='status-bar offline';bar.textContent='Sin conexión a la base de datos';}
+async function fbSet(path, data){
+  try {
+    const r = await fetch(DB_URL+'/'+path+'.json',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
     });
-    // Listen for data changes
-    db.ref('months').on('value', snap=>{
-      const data = snap.val();
-      monthsData = data||{};
-      refreshUI();
-    });
-  }catch(e){
-    console.error('Firebase init error:',e);
-    document.getElementById('statusBar').textContent='Error de conexión: '+e.message;
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return true;
+  } catch(e){console.error('fbSet error:',e);return false;}
+}
+
+async function fbDelete(path){
+  try {
+    const r = await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});
+    return r.ok;
+  } catch(e){console.error('fbDelete error:',e);return false;}
+}
+
+async function loadAllMonths(){
+  const bar = document.getElementById('statusBar');
+  bar.className='status-bar loading-bar';
+  bar.textContent='Cargando datos...';
+  const data = await fbGet('months');
+  if(data !== null){
+    monthsData = data || {};
+    bar.className='status-bar online';
+    bar.textContent='Conectado a la base de datos en la nube';
+  } else {
+    bar.className='status-bar offline';
+    bar.textContent='Error de conexión. Verifica tu internet.';
+  }
+  refreshUI();
+}
+
+async function saveMonthToCloud(monthNum, accounts){
+  const bar = document.getElementById('statusBar');
+  bar.className='status-bar loading-bar';
+  bar.textContent='Guardando datos en la nube...';
+  const ok = await fbSet('months/'+monthNum, {month:monthNum, accounts:accounts, uploadedAt:Date.now()});
+  if(ok){
+    monthsData[monthNum] = {month:monthNum, accounts:accounts};
+    bar.className='status-bar online';
+    bar.textContent='Datos guardados exitosamente en la nube';
+    selectedMonth = monthNum;
+    refreshUI();
+  } else {
+    bar.className='status-bar offline';
+    bar.textContent='Error al guardar. Verifica tu conexión.';
   }
 }
 
-function saveMonthToCloud(monthNum, accounts){
-  if(!db){alert('Base de datos no conectada');return;}
-  db.ref('months/'+monthNum).set({month:monthNum, accounts:accounts, uploadedAt:Date.now(), uploadedBy:'admin'});
+async function deleteMonthFromCloud(monthNum){
+  if(!confirm('¿Eliminar datos de '+MESES[monthNum]+'?')) return;
+  await fbDelete('months/'+monthNum);
+  delete monthsData[monthNum];
+  const keys = Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
+  selectedMonth = keys.length?keys[keys.length-1]:null;
+  refreshUI();
 }
 
-function deleteMonthFromCloud(monthNum){
-  if(!db)return;
-  if(confirm('¿Eliminar datos de '+MESES[monthNum]+'?')) db.ref('months/'+monthNum).remove();
-}
-
-/* ============ ROLES ============ */
+/* ======================================================
+   ROLES Y LOGIN
+   ====================================================== */
 function selectRole(r){
   if(r==='admin'){
     document.getElementById('pwdSection').style.display='block';
@@ -375,29 +350,20 @@ function doLogin(){
     document.getElementById('pwdErr').style.display='block';
   }
 }
-
 function startApp(){
   document.getElementById('mainApp').style.display='block';
   if(role==='admin') document.getElementById('adminPanel').style.display='block';
-
-  fbConfig = getStoredConfig();
-  if(fbConfig && fbConfig.databaseURL){
-    initFirebase(fbConfig);
-  } else if(role==='admin'){
-    document.getElementById('firebaseSetup').style.display='block';
-  } else {
-    // Viewer sin config — intenta leer config de URL params o muestra mensaje
-    document.getElementById('statusBar').textContent='Base de datos no configurada. El administrador debe configurar Firebase primero.';
-    document.getElementById('statusBar').className='status-bar offline';
-  }
+  loadAllMonths();
 }
 
-/* ============ PDF PARSING ============ */
+/* ======================================================
+   PDF PARSING
+   ====================================================== */
 async function handleFile(file){
   if(!file)return;
   const status = document.getElementById('uploadStatus');
   status.style.display='block';
-  status.innerHTML='<div class="loading">Procesando PDF...</div>';
+  status.innerHTML='<div class="loading-spinner">Procesando PDF...</div>';
 
   try{
     const buf = await file.arrayBuffer();
@@ -414,12 +380,12 @@ async function handleFile(file){
     const month = detectMonth(items);
     const accounts = extractAccounts(items);
 
-    if(!month){status.innerHTML='<p style="color:var(--red)">No se detectó el mes del balance. Verifica el PDF.</p>';return;}
-    if(Object.keys(accounts).length===0){status.innerHTML='<p style="color:var(--red)">No se encontraron cuentas en el PDF.</p>';return;}
+    if(!month){status.innerHTML='<p style="color:var(--red);font-weight:600">No se detectó el mes del balance. Verifica el PDF.</p>';return;}
+    if(Object.keys(accounts).length===0){status.innerHTML='<p style="color:var(--red);font-weight:600">No se encontraron cuentas en el PDF.</p>';return;}
 
-    saveMonthToCloud(month, accounts);
-    selectedMonth = month;
-    status.innerHTML='<p style="color:var(--grn);font-weight:600">✓ Balance de '+MESES[month]+' cargado exitosamente — '+Object.keys(accounts).length+' cuentas encontradas</p>';
+    status.innerHTML='<div class="loading-spinner">Guardando en la nube...</div>';
+    await saveMonthToCloud(month, accounts);
+    status.innerHTML='<p style="color:var(--grn);font-weight:600">Balance de '+MESES[month]+' cargado exitosamente — '+Object.keys(accounts).length+' cuentas encontradas</p>';
 
   }catch(e){
     status.innerHTML='<p style="color:var(--red)">Error: '+e.message+'</p>';
@@ -428,30 +394,24 @@ async function handleFile(file){
 }
 
 function detectMonth(items){
-  // Look for "Periodo: X a X" pattern
   const allText = items.map(i=>i.t).join(' ');
-  // Pattern: "Enero a Enero" or "01 a 01" etc
   const mp = allText.match(/Periodo\s*:?\s*(\w+)\s+a\s+(\w+)/i);
   if(mp){
     const mName = mp[2].toLowerCase().substring(0,3);
     if(MESES_SHORT[mName]) return MESES_SHORT[mName];
   }
-  // Try month names in text
+  for(let i=12;i>=1;i--){
+    const re = new RegExp('Saldo\\s+'+MESES[i].substring(0,3),'i');
+    if(re.test(allText)) return i;
+  }
   for(let i=12;i>=1;i--){
     const re = new RegExp('\\b'+MESES[i]+'\\b','i');
     if(re.test(allText)) return i;
-  }
-  // Try "Saldo XXX/26" pattern
-  const sp = allText.match(/Saldo\s+(\w{3})\/2[56]/i);
-  if(sp){
-    const m = sp[1].toLowerCase().substring(0,3);
-    if(MESES_SHORT[m]) return MESES_SHORT[m];
   }
   return null;
 }
 
 function extractAccounts(items){
-  // Group by Y coordinate (4px tolerance)
   const rows = [];
   const sorted = [...items].sort((a,b)=> b.y-a.y || a.x-b.x);
   let curY = null, curRow = [];
@@ -468,7 +428,6 @@ function extractAccounts(items){
 
   const accounts = {};
   const codeRe = /^[1-9]\d{3,7}$/;
-  const numRe = /[\d,.]+/;
 
   for(let ri=0;ri<rows.length;ri++){
     const row = rows[ri];
@@ -478,7 +437,6 @@ function extractAccounts(items){
     if(!codeRe.test(first)) continue;
 
     const code = first;
-    // Collect numbers from this row
     let nums = [];
     txts.forEach(it=>{
       const cleaned = it.t.replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
@@ -491,7 +449,7 @@ function extractAccounts(items){
       for(let la=1;la<=2 && ri+la<rows.length;la++){
         const nextRow = rows[ri+la];
         const nextFirst = nextRow.items[0].t.replace(/\s/g,'');
-        if(codeRe.test(nextFirst)) break; // Next account, stop
+        if(codeRe.test(nextFirst)) break;
         nextRow.items.forEach(it=>{
           const cleaned = it.t.replace(/\s/g,'').replace(/\./g,'').replace(/,/g,'.');
           const n = parseFloat(cleaned);
@@ -501,15 +459,12 @@ function extractAccounts(items){
       }
     }
 
-    // Get account name
     let name = '';
     for(let i=1;i<txts.length;i++){
       const t = txts[i].t;
       if(!/^[\d.,\-\s]+$/.test(t) && t!==code){name=t;break;}
     }
 
-    // Parse: expect [SaldoAnterior, Debito, Credito, SaldoActual] or similar
-    // We need debito and credito (positions vary)
     if(nums.length >= 3){
       accounts[code] = {
         name: name || (B[code]?B[code].n:code),
@@ -531,7 +486,9 @@ function extractAccounts(items){
   return accounts;
 }
 
-/* ============ UI REFRESH ============ */
+/* ======================================================
+   UI REFRESH
+   ====================================================== */
 function refreshUI(){
   const monthNums = Object.keys(monthsData).map(Number).sort((a,b)=>a-b);
 
@@ -542,7 +499,6 @@ function refreshUI(){
     return;
   }
 
-  // Month pills
   document.getElementById('monthsCard').style.display='block';
   const pillsDiv = document.getElementById('monthPills');
   pillsDiv.innerHTML='';
@@ -556,29 +512,28 @@ function refreshUI(){
 
   if(!selectedMonth || !monthsData[selectedMonth]) selectedMonth = monthNums[monthNums.length-1];
 
-  // Highlight active pill
   document.querySelectorAll('.pill').forEach(p=>{
-    if(p.textContent.startsWith(MESES[selectedMonth])) p.classList.add('active');
+    if(p.textContent.replace('×','').trim()===MESES[selectedMonth]) p.classList.add('active');
+    else p.classList.remove('active');
   });
 
   const mData = monthsData[selectedMonth];
-  if(!mData || !mData.accounts){return;}
+  if(!mData || !mData.accounts) return;
 
   buildReport(mData.accounts, selectedMonth, monthNums);
 }
 
-function findAmt(accounts, code, field){
-  if(accounts[code]) return accounts[code][field]||0;
-  // Sum sub-accounts
-  let sum=0, found=false;
-  Object.keys(accounts).forEach(k=>{
-    if(k.startsWith(code) && k!==code){sum+=accounts[k][field]||0;found=true;}
+function findAccum(accumAccounts, code, field){
+  if(accumAccounts[code]) return accumAccounts[code][field]||0;
+  let sum=0;
+  Object.keys(accumAccounts).forEach(k=>{
+    if(k.startsWith(code)&&k!==code) sum+=accumAccounts[k][field]||0;
   });
-  return found?sum:0;
+  return sum;
 }
 
 function buildReport(accounts, monthNum, allMonths){
-  // Calculate accumulated amounts across all loaded months up to selected
+  // Accumulated across all months up to selected
   const accumAccounts = {};
   allMonths.filter(m=>m<=monthNum).forEach(m=>{
     const ma = monthsData[m]?.accounts||{};
@@ -589,26 +544,17 @@ function buildReport(accounts, monthNum, allMonths){
     });
   });
 
-  function findAccum(code, field){
-    if(accumAccounts[code]) return accumAccounts[code][field]||0;
-    let sum=0;
-    Object.keys(accumAccounts).forEach(k=>{
-      if(k.startsWith(code)&&k!==code) sum+=accumAccounts[k][field]||0;
-    });
-    return sum;
-  }
-
   const fmt = n => n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});
   const pct = (v,t) => t>0?(v/t*100).toFixed(2):'0.00';
 
-  // Build income rows
+  // Income rows
   const ingCodes = Object.keys(B).filter(c=>c.startsWith('4'));
   let totalIngEjec = 0;
   let ingRows = [];
 
   ingCodes.forEach(code=>{
     const bp = B[code];
-    const credito = findAccum(code,'credito'); // Income = credits
+    const credito = findAccum(accumAccounts, code, 'credito');
     totalIngEjec += credito;
     const pEjec = pct(credito, bp.a);
     const pRest = bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
@@ -616,7 +562,7 @@ function buildReport(accounts, monthNum, allMonths){
     ingRows.push({code,name:bp.n,anual:bp.a,mes:bp.m,ejec:credito,pEjec,pRest,sem,isTotal:false});
   });
 
-  // Build expense rows by category
+  // Expense rows by category
   let gasRows = [];
   let totalGasEjec = 0;
   const catExec = {};
@@ -629,7 +575,7 @@ function buildReport(accounts, monthNum, allMonths){
     codes.forEach(code=>{
       const bp = B[code];
       if(!bp) return;
-      const debito = findAccum(code,'debito'); // Expenses = debits
+      const debito = findAccum(accumAccounts, code, 'debito');
       catTotal += debito;
       totalGasEjec += debito;
       const pEjec = pct(debito, bp.a);
@@ -639,8 +585,6 @@ function buildReport(accounts, monthNum, allMonths){
     });
 
     catExec[cat] = catTotal;
-
-    // Category total row
     const cpEjec = pct(catTotal, catAnual);
     const cpRest = catAnual>0?(100-parseFloat(cpEjec)).toFixed(2):'0.00';
     const csem = parseFloat(cpEjec)>70?'r':parseFloat(cpEjec)>50?'y':'g';
@@ -659,18 +603,18 @@ function buildReport(accounts, monthNum, allMonths){
     <div class="kpi"><div class="val">${pct(totalGasEjec,TOTALS.gasAnual)}%</div><div class="lbl">% Presupuesto Gastado</div></div>
   `;
 
-  // Income table
+  // Tables
   document.getElementById('tblCard').style.display='block';
-  renderTable('tblIng', ingRows, true);
+  renderTable('tblIng', ingRows);
+  renderTable('tblGas', gasRows);
 
-  // Expense table
-  renderTable('tblGas', gasRows, false);
-
-  // Summary table
+  // Summary
   const tblRes = document.getElementById('tblRes');
+  const piNG = pct(totalIngEjec,TOTALS.ingAnual);
+  const piGS = pct(totalGasEjec,TOTALS.gasAnual);
   tblRes.innerHTML = `<thead><tr><th>Concepto</th><th>Ppto Anual</th><th>Ejecutado Acum.</th><th>% Ejec.</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>
-    <tr class="tot-row"><td>Total Ingresos</td><td>$${fmt(TOTALS.ingAnual)}</td><td>$${fmt(totalIngEjec)}</td><td>${pct(totalIngEjec,TOTALS.ingAnual)}%</td><td>${(100-parseFloat(pct(totalIngEjec,TOTALS.ingAnual))).toFixed(2)}%</td><td>$${fmt(TOTALS.ingAnual-totalIngEjec)}</td><td><span class="sem sem-${parseFloat(pct(totalIngEjec,TOTALS.ingAnual))>70?'r':parseFloat(pct(totalIngEjec,TOTALS.ingAnual))>50?'y':'g'}"></span></td></tr>
-    <tr class="tot-row"><td>Total Gastos</td><td>$${fmt(TOTALS.gasAnual)}</td><td>$${fmt(totalGasEjec)}</td><td>${pct(totalGasEjec,TOTALS.gasAnual)}%</td><td>${(100-parseFloat(pct(totalGasEjec,TOTALS.gasAnual))).toFixed(2)}%</td><td>$${fmt(TOTALS.gasAnual-totalGasEjec)}</td><td><span class="sem sem-${parseFloat(pct(totalGasEjec,TOTALS.gasAnual))>70?'r':parseFloat(pct(totalGasEjec,TOTALS.gasAnual))>50?'y':'g'}"></span></td></tr>
+    <tr class="tot-row"><td>Total Ingresos</td><td>$${fmt(TOTALS.ingAnual)}</td><td>$${fmt(totalIngEjec)}</td><td>${piNG}%</td><td>${(100-parseFloat(piNG)).toFixed(2)}%</td><td>$${fmt(TOTALS.ingAnual-totalIngEjec)}</td><td><span class="sem sem-${parseFloat(piNG)>70?'r':parseFloat(piNG)>50?'y':'g'}"></span></td></tr>
+    <tr class="tot-row"><td>Total Gastos</td><td>$${fmt(TOTALS.gasAnual)}</td><td>$${fmt(totalGasEjec)}</td><td>${piGS}%</td><td>${(100-parseFloat(piGS)).toFixed(2)}%</td><td>$${fmt(TOTALS.gasAnual-totalGasEjec)}</td><td><span class="sem sem-${parseFloat(piGS)>70?'r':parseFloat(piGS)>50?'y':'g'}"></span></td></tr>
     <tr class="tot-row" style="background:#${excedente>=0?'e8f5e9':'fde8e8'} !important"><td>Excedente/Déficit</td><td>$${fmt(TOTALS.ingAnual-TOTALS.gasAnual)}</td><td>$${fmt(excedente)}</td><td colspan="4" style="text-align:center;font-size:1.1em;color:${excedente>=0?'var(--grn)':'var(--red)'}">${excedente>=0?'SUPERÁVIT':'DÉFICIT'}</td></tr>
   </tbody>`;
 
@@ -679,17 +623,15 @@ function buildReport(accounts, monthNum, allMonths){
   drawRadar(catExec);
   drawPie(catExec);
 
-  // Bar chart (accumulated)
   if(allMonths.length > 0){
     document.getElementById('accumCard').style.display='block';
     drawBar(allMonths);
   }
 }
 
-function renderTable(id, rows, isIncome){
+function renderTable(id, rows){
   const tbl = document.getElementById(id);
   let html = '<thead><tr><th>Cuenta</th><th>Descripción</th><th>Ppto Anual</th><th>Ppto Mes</th><th>Ejecutado Acum.</th><th>% Ejec. Anual</th><th>% Restante</th><th>Saldo</th><th>Semáforo</th></tr></thead><tbody>';
-
   rows.forEach(r=>{
     const cls = r.isTotal?'class="tot-row"':'';
     const saldo = r.anual - r.ejec;
@@ -702,14 +644,15 @@ function renderTable(id, rows, isIncome){
       <td><span class="sem sem-${r.sem}"></span></td>
     </tr>`;
   });
-
   html+='</tbody>';
   tbl.innerHTML=html;
 }
 
 function fmt2(n){return n.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
-/* ============ CHARTS ============ */
+/* ======================================================
+   CHARTS
+   ====================================================== */
 function drawRadar(catExec){
   const canvas = document.getElementById('radarChart');
   const ctx = canvas.getContext('2d');
@@ -719,10 +662,8 @@ function drawRadar(catExec){
   const cats = Object.keys(CAT_TOT_ANUAL).filter(c=>CAT_TOT_ANUAL[c]>0);
   const n = cats.length;
   if(n<3) return;
-
   const angle = i => (Math.PI*2*i/n) - Math.PI/2;
 
-  // Draw grid
   [0.25,0.5,0.7,1].forEach(level=>{
     ctx.beginPath();
     for(let i=0;i<=n;i++){
@@ -732,56 +673,46 @@ function drawRadar(catExec){
     ctx.closePath();
     if(level===0.7){ctx.strokeStyle='#e74c3c';ctx.lineWidth=2;ctx.setLineDash([5,5]);}
     else{ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.setLineDash([]);}
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.stroke();ctx.setLineDash([]);
   });
 
-  // 70% label
   const a70=angle(0);
   ctx.fillStyle='#e74c3c';ctx.font='bold 11px sans-serif';
   ctx.fillText('70% ALERTA',cx+Math.cos(a70)*R*0.7+5,cy+Math.sin(a70)*R*0.7-5);
 
-  // Axes + labels
   cats.forEach((cat,i)=>{
     const a=angle(i);
     ctx.beginPath();ctx.moveTo(cx,cy);
     ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
     ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.stroke();
-
-    const lx=cx+Math.cos(a)*(R+20), ly=cy+Math.sin(a)*(R+20);
+    const lx=cx+Math.cos(a)*(R+25), ly=cy+Math.sin(a)*(R+25);
     ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    // Wrap text if needed
-    const words = cat.split(' ');
-    words.forEach((w,wi)=>ctx.fillText(w,lx,ly+wi*13));
+    cat.split(' ').forEach((w,wi)=>ctx.fillText(w,lx,ly+wi*13));
   });
 
-  // Data polygon
   ctx.beginPath();
   cats.forEach((cat,i)=>{
     const exec = catExec[cat]||0;
     const total = CAT_TOT_ANUAL[cat];
-    const pct = Math.min(exec/total, 1.2); // cap at 120%
+    const pctVal = Math.min(exec/total, 1.2);
     const a=angle(i);
-    const x=cx+Math.cos(a)*R*pct, y=cy+Math.sin(a)*R*pct;
+    const x=cx+Math.cos(a)*R*pctVal, y=cy+Math.sin(a)*R*pctVal;
     i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
   });
   ctx.closePath();
   ctx.fillStyle='rgba(26,86,50,0.2)';ctx.fill();
-  ctx.strokeStyle='var(--pri)';ctx.lineWidth=2.5;ctx.stroke();
+  ctx.strokeStyle='#1a5632';ctx.lineWidth=2.5;ctx.stroke();
 
-  // Data points
   cats.forEach((cat,i)=>{
     const exec = catExec[cat]||0;
     const total = CAT_TOT_ANUAL[cat];
     const pctVal = Math.min(exec/total,1.2);
+    const pctNum = exec/total*100;
     const a=angle(i);
     const x=cx+Math.cos(a)*R*pctVal, y=cy+Math.sin(a)*R*pctVal;
-    const pctNum = (exec/total*100);
-
     ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
     ctx.fillStyle=pctNum>70?'#e74c3c':pctNum>50?'#f39c12':'#27ae60';
     ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-
     ctx.fillStyle='#333';ctx.font='bold 10px sans-serif';
     ctx.fillText(pctNum.toFixed(1)+'%',x+8,y-8);
   });
@@ -808,8 +739,6 @@ function drawPie(catExec){
     ctx.closePath();
     ctx.fillStyle=colors[i%colors.length];ctx.fill();
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-
-    // Label
     const mid=startAngle+slice/2;
     const lx=cx+Math.cos(mid)*(R*0.65), ly=cy+Math.sin(mid)*(R*0.65);
     if(slice>0.15){
@@ -819,7 +748,6 @@ function drawPie(catExec){
     startAngle+=slice;
   });
 
-  // Legend
   const lx=W-150, ly=30;
   cats.forEach((cat,i)=>{
     ctx.fillStyle=colors[i%colors.length];
@@ -838,7 +766,6 @@ function drawBar(allMonths){
   const pad={t:40,b:60,l:100,r:30};
   const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
 
-  // Calculate monthly totals
   const ingData=[], gasData=[];
   allMonths.forEach(m=>{
     const accs = monthsData[m]?.accounts||{};
@@ -854,7 +781,6 @@ function drawBar(allMonths){
   const maxV = Math.max(...ingData.map(d=>d.v),...gasData.map(d=>d.v),1);
   const barW = Math.min(40, cw/(allMonths.length*3));
 
-  // Grid
   ctx.strokeStyle='#eee';ctx.lineWidth=1;
   for(let i=0;i<=5;i++){
     const y=pad.t+ch*(1-i/5);
@@ -867,20 +793,14 @@ function drawBar(allMonths){
     const x=pad.l+i*(cw/allMonths.length)+cw/(allMonths.length*2)-barW;
     const hIng=ingData[i].v/maxV*ch;
     const hGas=gasData[i].v/maxV*ch;
-
-    // Income bar
     ctx.fillStyle='#27ae60';
     ctx.fillRect(x,pad.t+ch-hIng,barW,hIng);
-    // Expense bar
     ctx.fillStyle='#e74c3c';
     ctx.fillRect(x+barW+4,pad.t+ch-hGas,barW,hGas);
-
-    // Month label
     ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='center';
     ctx.fillText(MESES[m].substring(0,3),x+barW+2,H-pad.b+20);
   });
 
-  // Legend
   ctx.fillStyle='#27ae60';ctx.fillRect(pad.l,H-25,14,14);
   ctx.fillStyle='#333';ctx.font='12px sans-serif';ctx.textAlign='left';
   ctx.fillText('Ingresos',pad.l+20,H-14);
@@ -888,22 +808,25 @@ function drawBar(allMonths){
   ctx.fillStyle='#333';ctx.fillText('Gastos',pad.l+120,H-14);
 }
 
-/* ============ CSV EXPORT ============ */
+/* ======================================================
+   CSV EXPORT
+   ====================================================== */
 function exportCSV(){
   if(!selectedMonth || !monthsData[selectedMonth]) return;
   const accs = monthsData[selectedMonth].accounts;
   let csv='Cuenta,Descripción,Ppto Anual,Ppto Mes,Ejecutado,% Ejec Anual,% Restante,Saldo,Semáforo\n';
-
   Object.keys(B).forEach(code=>{
     const bp=B[code];
     const isIng=code.startsWith('4');
-    const ejec = isIng ? findAmtLocal(accs,code,'credito') : findAmtLocal(accs,code,'debito');
+    const field=isIng?'credito':'debito';
+    let ejec=0;
+    if(accs[code]) ejec=accs[code][field]||0;
+    else Object.keys(accs).forEach(k=>{if(k.startsWith(code)&&k!==code) ejec+=accs[k][field]||0;});
     const pEjec = bp.a>0?(ejec/bp.a*100).toFixed(2):'0.00';
     const pRest = bp.a>0?(100-parseFloat(pEjec)).toFixed(2):'0.00';
     const sem = parseFloat(pEjec)>70?'ROJO':parseFloat(pEjec)>50?'AMARILLO':'VERDE';
     csv+=`${code},"${bp.n}",${bp.a},${bp.m},${ejec},${pEjec}%,${pRest}%,${bp.a-ejec},${sem}\n`;
   });
-
   const blob = new Blob([csv],{type:'text/csv'});
   const a = document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -911,14 +834,9 @@ function exportCSV(){
   a.click();
 }
 
-function findAmtLocal(accounts, code, field){
-  if(accounts[code]) return accounts[code][field]||0;
-  let sum=0;
-  Object.keys(accounts).forEach(k=>{if(k.startsWith(code)&&k!==code) sum+=accounts[k][field]||0;});
-  return sum;
-}
-
-/* ============ DRAG & DROP ============ */
+/* ======================================================
+   DRAG & DROP
+   ====================================================== */
 const dz=document.getElementById('dropZone');
 if(dz){
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--pri2)';dz.style.background='#e0f0e0';});
